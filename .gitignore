@@ -1,0 +1,80 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+.python-version
+
+# Virtual Environment
+venv/
+ENV/
+env/
+.venv/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Environment
+.env
+.env.local
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# UV
+uv.lock
+
+# Tauri
+tauri-app/src-tauri/target/
+tauri-app/node_modules/
+tauri-app/src-tauri/Cargo.lock
+
+# Models (too large for git)
+*.safetensors
+*.pt
+*.pth
+
+# Swift
+swiftpm/
+.build/
+.swiftpm/
+xcuserdata/
+*.xcuserstate
+DerivedData/
+*.moved-aside
+*.xccheckout
+*.xcscmblueprint
+*.xcbkptlist
+
+# Test files
+test.ipynb
+output/

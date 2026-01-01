@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLX-Audio</title>
+    <style>
+:root{--bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a24;--border:#2a2a3a;--text:#e8e8f0;--dim:#6b6b80;--accent:#ec4899;--accent2:#8b5cf6;--green:#22c55e;--blue:#3b82f6}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.header{text-align:center;padding:2rem 1rem 1rem}
+.title{font-size:2.5rem;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:var(--dim);margin-top:.5rem}
+.lang-switch{position:absolute;top:1rem;right:1rem;display:flex;gap:.5rem}
+.lang-btn{padding:.4rem .8rem;border:1px solid var(--border);background:var(--surface);color:var(--dim);border-radius:6px;cursor:pointer;font-size:.8rem}
+.lang-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+.container{max-width:800px;margin:0 auto;padding:1rem}
+.stats-bar{display:grid;grid-template-columns:1fr 3fr 1fr;gap:1rem;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1.5rem}
+.stat-item{text-align:center}
+.stat-label{font-size:.75rem;color:var(--dim)}
+.stat-value{font-size:1.5rem;font-weight:600;color:var(--accent)}
+.model-info{display:flex;align-items:center;gap:1rem}
+.model-name{font-size:.9rem}
+.model-badge{font-size:.7rem;padding:.2rem .5rem;background:var(--surface2);border-radius:4px;color:var(--dim)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1rem}
+.card-title{font-size:1rem;font-weight:600;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.mode-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem}
+.mode-btn{padding:.75rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;cursor:pointer;text-align:center;transition:all .2s}
+.mode-btn:hover{border-color:var(--accent)}
+.mode-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent2));border-color:transparent}
+.mode-btn .icon{font-size:1.2rem;margin-bottom:.25rem}
+.mode-btn .label{font-size:.8rem}
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:3rem;text-align:center;cursor:pointer;transition:all .2s}
+.upload-zone:hover{border-color:var(--accent);background:var(--surface2)}
+.upload-zone.dragover{border-color:var(--accent);background:rgba(236,72,153,.1)}
+.upload-icon{font-size:3rem;margin-bottom:1rem}
+.upload-text{color:var(--dim);font-size:.9rem}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.form-group{margin-bottom:1rem}
+.form-label{display:block;font-size:.8rem;color:var(--dim);margin-bottom:.5rem}
+.form-hint{font-size:.7rem;color:var(--dim);margin-top:.25rem}
+input,select,textarea{width:100%;padding:.75rem;background:var(--surface2);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.9rem}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent)}
+textarea{min-height:100px;resize:vertical}
+.slider-wrap{display:flex;align-items:center;gap:1rem}
+.slider-wrap input[type=range]{flex:1;-webkit-appearance:none;height:6px;background:var(--surface2);border-radius:3px;border:none}
+.slider-wrap input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;background:var(--accent);border-radius:50%;cursor:pointer}
+.slider-val{min-width:3rem;text-align:right;font-size:.9rem}
+.btn{width:100%;padding:1rem;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:8px;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;transition:opacity .2s;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.btn:hover{opacity:.9}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-secondary{background:var(--surface2);border:1px solid var(--border)}
+.result-area{margin-top:1rem}
+.result-text{background:var(--surface2);border-radius:8px;padding:1rem;font-family:monospace;white-space:pre-wrap;max-height:200px;overflow-y:auto}
+audio{width:100%;margin-top:1rem;border-radius:8px}
+.collapsible{cursor:pointer;display:flex;justify-content:space-between;align-items:center}
+.collapsible::after{content:'▼';font-size:.7rem;transition:transform .2s}
+.collapsible.open::after{transform:rotate(180deg)}
+.collapse-content{display:none;margin-top:1rem}
+.collapse-content.show{display:block}
+.footer{text-align:center;padding:2rem;color:var(--dim);font-size:.8rem}
+.footer a{color:var(--accent);text-decoration:none}
+.status-dot{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:.5rem}
+.status-dot.online{background:var(--green)}
+.status-dot.offline{background:#ef4444}
+.hidden{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading{animation:spin 1s linear infinite}
+    </style>
+</head>
+<body>
+<div class="lang-switch">
+    <button class="lang-btn" onclick="setLang('en')">EN</button>
+    <button class="lang-btn active" onclick="setLang('zh')">中文</button>
+</div>
+
+<div class="header">
+    <h1 class="title">MLX-Audio</h1>
+    <p class="subtitle" data-i18n="subtitle">Apple Silicon 上的 TTS/STT 语音处理</p>
+</div>
+
+<div class="container">
+    <!-- 状态栏 -->
+    <div class="stats-bar">
+        <div class="stat-item">
+            <div class="stat-label" data-i18n="current_model">当前模型</div>
+            <div class="model-name" id="model-name">Kokoro-82M</div>
+        </div>
+        <div class="model-info">
+            <span class="model-badge">MLX</span>
+            <span class="model-badge" id="memory-usage">0 MB</span>
+            <span class="model-badge"><span class="status-dot online"></span><span data-i18n="ready">就绪</span></span>
+        </div>
+        <div class="stat-item">
+            <div class="stat-label" data-i18n="avg_time">平均耗时</div>
+            <div class="stat-value" id="avg-time">0s</div>
+        </div>
+    </div>
+
+    <!-- 模式选择 -->
+    <div class="card">
+        <div class="card-title">📋 <span data-i18n="select_mode">选择模式</span></div>
+        <div class="mode-grid" style="grid-template-columns: 1fr 1fr;">
+            <div class="mode-btn active" onclick="setMode('tts')" id="mode-tts">
+                <div class="icon">📝</div>
+                <div class="label" data-i18n="tts">文字转语音</div>
+            </div>
+            <div class="mode-btn" onclick="setMode('stt')" id="mode-stt">
+                <div class="icon">🎤</div>
+                <div class="label" data-i18n="stt">语音转文字</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- TTS 面板 -->
+    <div id="panel-tts">
+        <div class="card">
+            <div class="form-group">
+                <label class="form-label" data-i18n="model">模型</label>
+                <select id="tts-model">
+                    <optgroup label="Kokoro (推荐)">
+                        <option value="mlx-community/Kokoro-82M-bf16" selected>Kokoro-82M (最佳质量)</option>
+                        <option value="mlx-community/Kokoro-82M-4bit">Kokoro-82M-4bit (快速)</option>
+                    </optgroup>
+                    <optgroup label="OuteTTS">
+                        <option value="mlx-community/Llama-OuteTTS-1.0-1B-fp16">OuteTTS-1B (高质量)</option>
+                        <option value="mlx-community/Llama-OuteTTS-1.0-1B-4bit">OuteTTS-1B-4bit (快速)</option>
+                    </optgroup>
+                    <optgroup label="VoxCPM">
+                        <option value="mlx-community/VoxCPM1.5">VoxCPM1.5 (双语)</option>
+                        <option value="mlx-community/VoxCPM1.5-4bit">VoxCPM1.5-4bit (快速)</option>
+                    </optgroup>
+                    <optgroup label="VibeVoice">
+                        <option value="mlx-community/VibeVoice-Realtime-0.5B-fp16">VibeVoice-0.5B (对话)</option>
+                        <option value="mlx-community/VibeVoice-Realtime-0.5B-4bit">VibeVoice-0.5B-4bit (快速)</option>
+                    </optgroup>
+                    <optgroup label="Dia">
+                        <option value="mlx-community/Dia-1.6B">Dia-1.6B</option>
+                        <option value="mlx-community/Dia-1.6B-4bit">Dia-1.6B-4bit (快速)</option>
+                    </optgroup>
+                    <optgroup label="Chatterbox">
+                        <option value="mlx-community/chatterbox-turbo-fp16">Chatterbox-Turbo</option>
+                        <option value="mlx-community/chatterbox-4bit">Chatterbox-4bit (快速)</option>
+                    </optgroup>
+                </select>
+                <div class="form-hint">首次使用会自动下载模型</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="input_text">输入文本</label>
+                <textarea id="tts-text" placeholder="请输入要转换的文字..."></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" data-i18n="language">语言</label>
+                    <select id="tts-lang" onchange="updateVoices()">
+                        <option value="a">🇺🇸 English (US)</option>
+                        <option value="b">🇬🇧 English (UK)</option>
+                        <option value="z">🇨🇳 中文</option>
+                        <option value="j">🇯🇵 日本語</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" data-i18n="voice">声音</label>
+                    <select id="tts-voice"></select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="speed">语速: <span id="speed-val">1.0</span>x</label>
+                <div class="slider-wrap">
+                    <input type="range" id="tts-speed" min="0.5" max="2" step="0.1" value="1" oninput="document.getElementById('speed-val').textContent=this.value">
+                </div>
+                <div class="form-hint" data-i18n="speed_hint">0.5 = 慢速, 2.0 = 快速</div>
+            </div>
+        </div>
+
+        <!-- 高级设置 -->
+        <div class="card">
+            <div class="card-title collapsible" onclick="toggleCollapse(this)">
+                ⚙️ <span data-i18n="advanced">高级设置</span>
+            </div>
+            <div class="collapse-content">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="temperature">温度</label>
+                        <input type="number" id="tts-temp" value="0.7" min="0" max="2" step="0.1">
+                        <div class="form-hint">0=确定性, 2=随机</div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label" data-i18n="max_tokens">最大Token</label>
+                        <input type="number" id="tts-tokens" value="512" min="64" max="4096">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button class="btn" onclick="generateTTS()" id="tts-btn">
+            <span>▶</span> <span data-i18n="generate">生成语音</span>
+        </button>
+        <div class="result-area">
+            <audio id="tts-audio" controls class="hidden"></audio>
+        </div>
+    </div>
+
+    <!-- STT 面板 -->
+    <div id="panel-stt" class="hidden">
+        <div class="card">
+            <div class="upload-zone" id="upload-zone" onclick="document.getElementById('stt-file').click()">
+                <div class="upload-icon">🎵</div>
+                <div class="upload-text" data-i18n="upload_hint">拖拽音频文件到此处或点击上传</div>
+                <div class="upload-text" style="margin-top:.5rem">WAV, MP3, FLAC, M4A</div>
+            </div>
+            <input type="file" id="stt-file" accept="audio/*" class="hidden" onchange="handleFileSelect(this)">
+            <div id="file-name" class="hidden" style="margin-top:1rem;text-align:center"></div>
+        </div>
+        <div class="card">
+            <div class="form-group">
+                <label class="form-label">语言</label>
+                <select id="stt-lang">
+                    <option value="">自动检测</option>
+                    <option value="zh">中文</option>
+                    <option value="en">English</option>
+                    <option value="ja">日本語</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">提示词 (可选)</label>
+                <input type="text" id="stt-prompt" placeholder="例如：专业术语、人名、地名等">
+                <div class="form-hint">提供上下文提示词可提高识别准确率</div>
+            </div>
+        </div>
+        <button class="btn" onclick="transcribe()" id="stt-btn">
+            <span>▶</span> <span data-i18n="transcribe">开始转录</span>
+        </button>
+        <div class="result-area">
+            <div id="stt-result" class="result-text hidden"></div>
+        </div>
+    </div>
+
+</div>
+
+<div class="footer">
+    <span data-i18n="powered_by">由</span> MLX-Audio <span data-i18n="powered_suffix">驱动</span> · 
+    <a href="/docs" data-i18n="api_docs">API文档</a>
+</div>
+
+<script>
+const VOICES = {
+    a: [{v:'af_heart',n:'Heart ♀'},{v:'af_nova',n:'Nova ♀'},{v:'af_bella',n:'Bella ♀'},{v:'am_adam',n:'Adam ♂'},{v:'am_michael',n:'Michael ♂'}],
+    b: [{v:'bf_emma',n:'Emma ♀'},{v:'bf_isabella',n:'Isabella ♀'},{v:'bm_george',n:'George ♂'},{v:'bm_lewis',n:'Lewis ♂'}],
+    z: [{v:'zf_xiaobei',n:'小贝 ♀'},{v:'zf_xiaoni',n:'小妮 ♀'},{v:'zf_xiaoxiao',n:'小小 ♀'},{v:'zm_yunjian',n:'云健 ♂'}],
+    j: [{v:'jf_alpha',n:'Alpha ♀'},{v:'jf_gongitsune',n:'Gongitsune ♀'},{v:'jm_kumo',n:'Kumo ♂'}]
+};
+const i18n = {
+    en:{subtitle:'TTS/STT on Apple Silicon',current_model:'Model',ready:'Ready',avg_time:'Avg Time',select_mode:'Select Mode',tts:'Text to Speech',stt:'Speech to Text',voice_clone:'Voice Clone',input_text:'Input Text',language:'Language',voice:'Voice',speed:'Speed',speed_hint:'0.5=slow, 2.0=fast',advanced:'Advanced',temperature:'Temperature',max_tokens:'Max Tokens',generate:'Generate',upload_hint:'Drop audio here or click to upload',transcribe:'Transcribe',ref_audio:'Reference Audio',clone_text:'Text to synthesize',clone_generate:'Clone & Generate',powered_by:'Powered by',powered_suffix:'',api_docs:'API Docs'},
+    zh:{subtitle:'Apple Silicon 上的 TTS/STT 语音处理',current_model:'当前模型',ready:'就绪',avg_time:'平均耗时',select_mode:'选择模式',tts:'文字转语音',stt:'语音转文字',voice_clone:'声音克隆',input_text:'输入文本',language:'语言',voice:'声音',speed:'语速',speed_hint:'0.5=慢速, 2.0=快速',advanced:'高级设置',temperature:'温度',max_tokens:'最大Token',generate:'生成语音',upload_hint:'拖拽音频文件到此处或点击上传',transcribe:'开始转录',ref_audio:'参考音频 (用于克隆声音)',clone_text:'要合成的文本',clone_generate:'克隆并生成',powered_by:'由',powered_suffix:'驱动',api_docs:'API文档'}
+};
+let currentLang = 'zh', currentMode = 'tts';
+
+function setLang(lang) {
+    currentLang = lang;
+    localStorage.setItem('lang', lang);
+    document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.textContent.includes(lang.toUpperCase()) || (lang==='zh' && b.textContent==='中文')));
+    document.querySelectorAll('[data-i18n]').forEach(el => { if(i18n[lang][el.dataset.i18n]) el.textContent = i18n[lang][el.dataset.i18n]; });
+}
+
+function setMode(mode) {
+    currentMode = mode;
+    ['tts','stt'].forEach(m => {
+        document.getElementById('mode-'+m).classList.toggle('active', m===mode);
+        document.getElementById('panel-'+m).classList.toggle('hidden', m!==mode);
+    });
+}
+
+function updateVoices() {
+    const lang = document.getElementById('tts-lang').value;
+    const sel = document.getElementById('tts-voice');
+    sel.innerHTML = VOICES[lang].map(v => `<option value="${v.v}">${v.n}</option>`).join('');
+}
+
+function toggleCollapse(el) {
+    el.classList.toggle('open');
+    el.nextElementSibling.classList.toggle('show');
+}
+
+async function generateTTS() {
+    const btn = document.getElementById('tts-btn');
+    const audio = document.getElementById('tts-audio');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading">⏳</span> 生成中...';
+    const start = Date.now();
+    try {
+        const res = await fetch('/v1/audio/speech', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                model: document.getElementById('tts-model').value,
+                input: document.getElementById('tts-text').value,
+                voice: document.getElementById('tts-voice').value,
+                speed: parseFloat(document.getElementById('tts-speed').value),
+                lang_code: document.getElementById('tts-lang').value,
+                temperature: parseFloat(document.getElementById('tts-temp').value)
+            })
+        });
+        const blob = await res.blob();
+        audio.src = URL.createObjectURL(blob);
+        audio.classList.remove('hidden');
+        audio.play();
+        document.getElementById('avg-time').textContent = ((Date.now()-start)/1000).toFixed(1)+'s';
+        document.getElementById('model-name').textContent = document.getElementById('tts-model').value.split('/')[1];
+    } catch(e) { alert('Error: '+e.message); }
+    finally { btn.disabled = false; btn.innerHTML = '<span>▶</span> '+(currentLang==='zh'?'生成语音':'Generate'); }
+}
+
+function handleFileSelect(input) {
+    if(input.files[0]) {
+        document.getElementById('file-name').textContent = '📄 ' + input.files[0].name;
+        document.getElementById('file-name').classList.remove('hidden');
+    }
+}
+
+async function transcribe() {
+    const btn = document.getElementById('stt-btn');
+    const file = document.getElementById('stt-file').files[0];
+    if(!file) return alert(currentLang==='zh'?'请先选择音频文件':'Please select an audio file');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading">⏳</span> 转录中...';
+    try {
+        const form = new FormData();
+        form.append('file', file);
+        form.append('model', 'mlx-community/whisper-large-v3-turbo');
+        const lang = document.getElementById('stt-lang').value;
+        const prompt = document.getElementById('stt-prompt').value;
+        if(lang) form.append('language', lang);
+        if(prompt) form.append('prompt', prompt);
+        const res = await fetch('/v1/audio/transcriptions', {method:'POST', body:form});
+        const data = await res.json();
+        const result = document.getElementById('stt-result');
+        result.textContent = data.text;
+        result.classList.remove('hidden');
+    } catch(e) { alert('Error: '+e.message); }
+    finally { btn.disabled = false; btn.innerHTML = '<span>▶</span> '+(currentLang==='zh'?'开始转录':'Transcribe'); }
+}
+
+// 拖拽上传
+const zone = document.getElementById('upload-zone');
+zone.ondragover = e => { e.preventDefault(); zone.classList.add('dragover'); };
+zone.ondragleave = () => zone.classList.remove('dragover');
+zone.ondrop = e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    if(e.dataTransfer.files[0]) {
+        document.getElementById('stt-file').files = e.dataTransfer.files;
+        handleFileSelect(document.getElementById('stt-file'));
+    }
+};
+
+// 初始化
+updateVoices();
+setLang(localStorage.getItem('lang') || 'zh');
+fetch('/api/health').then(r=>r.json()).then(d=>{
+    document.getElementById('memory-usage').textContent = (d.models.memory_mb||0).toFixed(1)+' MB';
+}).catch(()=>{});
+</script>
+</body>
+</html>

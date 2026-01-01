@@ -1,0 +1,2044 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MLX-Audio</title>
+    <style>
+:root{--bg:linear-gradient(135deg,#0f0f23,#1a0a2e);--surface:rgba(255,255,255,0.05);--surface2:rgba(255,255,255,0.1);--border:rgba(255,255,255,0.1);--text:#e8e8f0;--dim:#a0a0b0;--accent:#ec4899;--accent2:#8b5cf6;--green:#22c55e;--blue:#3b82f6;--orange:#f59e0b;--red:#ef4444}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+.header{text-align:center;padding:2rem 1rem 1rem}
+.title{font-size:2.5rem;font-weight:700;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.subtitle{color:var(--dim);margin-top:.5rem}
+.container{max-width:900px;margin:0 auto;padding:1rem}
+.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-bottom:2rem}
+.metric-card{background:var(--surface);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:12px;padding:1.5rem;text-align:center;transition:all .3s}
+.metric-card.success{background:rgba(34,197,94,0.1);border-color:var(--green)}
+.metric-label{font-size:.8rem;color:var(--dim);margin-bottom:.5rem}
+.metric-value{font-size:1.8rem;font-weight:600;color:var(--accent)}
+.metric-unit{font-size:.9rem;color:var(--dim)}
+.mode-toggle{display:flex;background:var(--surface);border-radius:12px;padding:.5rem;margin-bottom:2rem;border:1px solid var(--border)}
+.mode-btn{flex:1;padding:1rem;border:none;background:transparent;color:var(--text);border-radius:8px;cursor:pointer;transition:all .3s;font-weight:500}
+.mode-btn.active{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
+.card{background:var(--surface);backdrop-filter:blur(10px);border:1px solid var(--border);border-radius:12px;padding:1.5rem;margin-bottom:1.5rem}
+.card-title{font-size:1.1rem;font-weight:600;margin-bottom:1rem;display:flex;align-items:center;gap:.5rem}
+.form-group{margin-bottom:1rem}
+.form-label{display:block;font-size:.85rem;color:var(--dim);margin-bottom:.5rem;font-weight:500}
+input,select,textarea{width:100%;padding:.75rem;background:rgba(255,255,255,0.05);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:.9rem;transition:all .3s}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);background:rgba(255,255,255,0.08)}
+textarea{min-height:120px;resize:vertical}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.slider-group{display:flex;align-items:center;gap:1rem}
+.slider{flex:1;-webkit-appearance:none;height:6px;background:rgba(255,255,255,0.1);border-radius:3px;border:none}
+.slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;background:linear-gradient(135deg,var(--accent),var(--accent2));border-radius:50%;cursor:pointer}
+.slider-value{min-width:3rem;text-align:right;font-weight:600;color:var(--accent)}
+.btn{width:100%;padding:1rem;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:8px;color:#fff;font-size:1rem;font-weight:600;cursor:pointer;transition:all .3s;display:flex;align-items:center;justify-content:center;gap:.5rem}
+.btn:hover{transform:translateY(-2px);box-shadow:0 8px 25px rgba(236,72,153,0.3)}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+.btn-secondary{background:var(--surface);border:1px solid var(--border);color:var(--text)}
+.btn-secondary:hover{background:var(--surface2)}
+.switch{position:relative;display:inline-block;width:50px;height:24px}
+.switch input{opacity:0;width:0;height:0}
+.switch-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:rgba(255,255,255,0.1);transition:.4s;border-radius:24px}
+.switch-slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;transition:.4s;border-radius:50%}
+input:checked + .switch-slider{background:linear-gradient(135deg,var(--accent),var(--accent2))}
+input:checked + .switch-slider:before{transform:translateX(26px)}
+.upload-zone{border:2px dashed var(--border);border-radius:12px;padding:3rem;text-align:center;cursor:pointer;transition:all .3s;background:rgba(255,255,255,0.02)}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:rgba(236,72,153,0.1)}
+.upload-icon{font-size:3rem;margin-bottom:1rem}
+.result-area{margin-top:1.5rem}
+.result-text{background:rgba(255,255,255,0.05);border-radius:8px;padding:1rem;font-family:monospace;white-space:pre-wrap;max-height:400px;overflow-y:auto;border:1px solid var(--border);line-height:1.6}
+.result-text::-webkit-scrollbar{width:8px}
+.result-text::-webkit-scrollbar-track{background:var(--surface2);border-radius:4px}
+.result-text::-webkit-scrollbar-thumb{background:var(--accent);border-radius:4px}
+.result-text::-webkit-scrollbar-thumb:hover{background:var(--accent2)}
+audio{width:100%;margin-top:1rem;border-radius:8px}
+.status-indicator{display:inline-flex;align-items:center;gap:.5rem;padding:.5rem 1rem;border-radius:20px;font-size:.8rem;font-weight:500}
+.status-indicator.ready{background:rgba(34,197,94,0.2);color:var(--green)}
+.status-indicator.processing{background:rgba(245,158,11,0.2);color:var(--orange)}
+.status-indicator.error{background:rgba(239,68,68,0.2);color:var(--red)}
+.hidden{display:none}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.loading{animation:spin 1s linear infinite}
+.pulsing{animation:pulse 2s ease-in-out infinite}
+.progress-bar{width:100%;height:4px;background:rgba(255,255,255,0.1);border-radius:2px;overflow:hidden;margin-top:1rem}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0%;transition:width .3s}
+    </style>
+</head>
+<body>
+<div class="header">
+    <div style="position:absolute;top:1rem;right:1rem">
+        <select id="language-selector" onchange="setLanguage(this.value)" style="padding:0.5rem;background:var(--surface);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:0.85rem">
+            <option value="zh-CN">🇨🇳 简体中文</option>
+            <option value="zh-TW">🇹🇼 繁體中文</option>
+            <option value="en">🇺🇸 English</option>
+            <option value="ja">🇯🇵 日本語</option>
+            <option value="ko">🇰🇷 한국어</option>
+            <option value="de">🇩🇪 Deutsch</option>
+            <option value="fr">🇫🇷 Français</option>
+            <option value="it">🇮🇹 Italiano</option>
+            <option value="ru">🇷🇺 Русский</option>
+            <option value="th">🇹🇭 ไทย</option>
+            <option value="ar">🇸🇦 العربية</option>
+            <option value="hi">🇮🇳 हिन्दी</option>
+        </select>
+    </div>
+    <h1 class="title">MLX-Audio</h1>
+    <p class="subtitle" data-i18n="subtitle">High-performance speech processing on Apple Silicon</p>
+</div>
+
+<div class="container">
+    <!-- 性能指标卡片 -->
+    <div class="metrics-grid">
+        <div class="metric-card" id="ttfb-card">
+            <div class="metric-label" data-i18n="metric.ttfb">First Byte Latency</div>
+            <div class="metric-value" id="ttfb-value">--</div>
+            <div class="metric-unit">ms</div>
+        </div>
+        <div class="metric-card" id="start-card">
+            <div class="metric-label" data-i18n="metric.start">Playback Start Time</div>
+            <div class="metric-value" id="start-value">--</div>
+            <div class="metric-unit">ms</div>
+        </div>
+        <div class="metric-card" id="total-card">
+            <div class="metric-label" data-i18n="metric.total">Total Processing Time</div>
+            <div class="metric-value" id="total-value">--</div>
+            <div class="metric-unit">ms</div>
+        </div>
+        <div class="metric-card" id="size-card">
+            <div class="metric-label" data-i18n="metric.size">Data Size</div>
+            <div class="metric-value" id="size-value">--</div>
+            <div class="metric-unit">KB</div>
+        </div>
+    </div>
+
+    <!-- 模型管理 - 紧凑版 -->
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:.75rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:1.5rem;font-size:.85rem">
+        <div style="display:flex;gap:2rem">
+            <div>
+                <span style="color:var(--dim)" data-i18n="model.tts">TTS:</span>
+                <span id="tts-models-compact">--</span>
+            </div>
+            <div>
+                <span style="color:var(--dim)" data-i18n="model.stt">STT:</span>
+                <span id="stt-models-compact">--</span>
+            </div>
+        </div>
+        <div style="display:flex;gap:1rem;align-items:center">
+            <span style="color:var(--dim)" data-i18n="model.memory">内存:</span>
+            <span id="memory-compact" style="color:var(--accent);font-weight:600">--</span>
+            <button onclick="toggleModelManager()" style="padding:.25rem .75rem;background:var(--surface2);border:1px solid var(--border);border-radius:6px;color:var(--text);cursor:pointer;font-size:.8rem" data-i18n="model.manage">管理</button>
+        </div>
+    </div>
+
+    <!-- 详细模型管理面板 -->
+    <div id="model-manager" class="card hidden" style="margin-bottom:1.5rem">
+        <div style="margin-bottom:1rem;padding:.75rem;background:var(--surface2);border-radius:6px">
+            <div style="font-size:.9rem;margin-bottom:.5rem" data-i18n="api.title">🔗 API Connection Test</div>
+            <div style="display:flex;gap:.5rem;align-items:center">
+                <input type="text" id="api-url" value="http://127.0.0.1:8002" style="flex:1;padding:.5rem;background:var(--surface);border:1px solid var(--border);border-radius:4px;color:var(--text);font-size:.85rem">
+                <button onclick="testAPI()" style="padding:.5rem 1rem;background:var(--accent);border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:.85rem" data-i18n="api.test">Test</button>
+            </div>
+            <div id="api-test-result" style="margin-top:.5rem;font-size:.8rem;color:var(--dim)"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem">
+            <div>
+                <div style="font-size:.9rem;color:var(--dim);margin-bottom:.5rem" data-i18n="model.ttsModels">TTS Models</div>
+                <div id="tts-models-list"></div>
+            </div>
+            <div>
+                <div style="font-size:.9rem;color:var(--dim);margin-bottom:.5rem" data-i18n="model.sttModels">STT Models</div>
+                <div id="stt-models-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模式切换 -->
+    <div class="mode-toggle">
+        <button class="mode-btn active" onclick="setMode('tts')" id="mode-tts" data-i18n="mode.tts">📝 文字转语音</button>
+        <button class="mode-btn" onclick="setMode('stt')" id="mode-stt" data-i18n="mode.stt">🎤 语音转文字</button>
+    </div>
+
+    <!-- TTS 面板 -->
+    <div id="panel-tts">
+        <div class="card">
+            <div class="card-title" data-i18n="tts.settings">🎯 生成设置</div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="tts.model">TTS模型</label>
+                <select id="tts-model">
+                    <option value="mlx-community/Kokoro-82M-bf16" selected data-i18n="tts.model.kokoro">Kokoro-82M (推荐)</option>
+                    <option value="mlx-community/Kokoro-82M-4bit" data-i18n="tts.model.kokoro4bit">Kokoro-82M-4bit (量化版)</option>
+                </select>
+                <div class="form-hint" data-i18n="tts.model.hint">支持中英日等9种语言，54个声音</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="tts.text">输入文本</label>
+                <textarea id="tts-text" data-i18n-placeholder="tts.text.placeholder" placeholder="请输入要转换的文字...">It is not the critic who counts... The credit belongs to the man who is actually in the arena, whose face is marred by dust and sweat and blood; who strives valiantly; who errs, who comes short again and again... who at the best knows in the end the triumph of high achievement, and who at the worst, if he fails, at least fails while daring greatly.</textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label" data-i18n="tts.language">语言</label>
+                    <select id="tts-lang" onchange="updateVoices()">
+                        <option value="a" selected>🇺🇸 English (US)</option>
+                        <option value="b">🇬🇧 English (UK)</option>
+                        <option value="z">🇨🇳 中文</option>
+                        <option value="j">🇯🇵 日本語</option>
+                        <option value="e">🇪🇸 Español</option>
+                        <option value="f">🇫🇷 Français</option>
+                        <option value="h">🇮🇳 हिन्दी</option>
+                        <option value="i">🇮🇹 Italiano</option>
+                        <option value="p">🇧🇷 Português</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" data-i18n="tts.voice">声音</label>
+                    <select id="tts-voice"></select>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label"><span data-i18n="tts.speed">语速:</span> <span id="speed-val">1.0</span>x</label>
+                <div class="slider-group">
+                    <input type="range" class="slider" id="tts-speed" min="0.5" max="2" step="0.1" value="1" oninput="updateSpeed(this.value)">
+                    <span class="slider-value" id="speed-display">1.0x</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" style="display:flex;align-items:center;gap:1rem">
+                    <span data-i18n="tts.streaming">流式播放模式（推荐）</span>
+                    <label class="switch">
+                        <input type="checkbox" id="streaming-toggle" checked>
+                        <span class="switch-slider"></span>
+                    </label>
+                </label>
+            </div>
+        </div>
+
+        <button class="btn" onclick="generateTTS()" id="tts-btn">
+            <span>▶</span> <span data-i18n="tts.generate">生成语音</span>
+        </button>
+        
+        <div class="progress-bar hidden" id="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+        </div>
+
+        <div class="result-area">
+            <div class="status-indicator ready hidden" id="status-indicator">
+                <span>✓</span> <span data-i18n="status.complete">Generation Complete</span>
+            </div>
+            <canvas id="waveform" class="hidden" width="800" height="100" style="width:100%;height:100px;background:#1a1a24;border-radius:8px;margin-bottom:1rem"></canvas>
+            <audio id="tts-audio" controls class="hidden"></audio>
+            <button class="btn btn-secondary hidden" onclick="downloadAudio()" id="download-btn" style="margin-top:1rem">
+                <span>⬇️</span> <span data-i18n="tts.download">下载音频</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- STT 面板 -->
+    <div id="panel-stt" class="hidden">
+        <div class="card">
+            <div class="upload-zone" id="upload-zone" onclick="document.getElementById('stt-file').click()">
+                <div class="upload-icon">🎵</div>
+                <div data-i18n="stt.upload">拖拽音频文件到此处或点击上传</div>
+                <div style="margin-top:.5rem;font-size:.8rem;color:var(--dim)" data-i18n="stt.formats">支持 WAV, MP3, FLAC, M4A</div>
+            </div>
+            <input type="file" id="stt-file" accept="audio/*" class="hidden" onchange="handleFileSelect(this)">
+            <div id="file-name" class="hidden" style="margin-top:1rem;text-align:center"></div>
+        </div>
+        
+        <div class="card">
+            <div class="card-title" data-i18n="stt.settings">🎯 转录设置</div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="stt.model">Whisper模型</label>
+                <select id="stt-model">
+                    <option value="mlx-community/whisper-large-v3-turbo" selected data-i18n="stt.model.turbo">Turbo (推荐)</option>
+                    <option value="mlx-community/whisper-large-v3-mlx-4bit">Large-4bit</option>
+                    <option value="mlx-community/whisper-medium-mlx-4bit">Medium-4bit</option>
+                    <option value="mlx-community/whisper-small-mlx-4bit">Small-4bit</option>
+                    <option value="mlx-community/whisper-base-mlx-4bit">Base-4bit</option>
+                    <option value="mlx-community/whisper-tiny-mlx-4bit">Tiny-4bit</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="stt.language">语言</label>
+                <select id="stt-lang">
+                    <option value="" data-i18n="stt.language.auto">自动检测</option>
+                    <option value="zh">中文</option>
+                    <option value="en">English</option>
+                    <option value="ja">日本語</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label"><span data-i18n="stt.prompt">提示词</span> <span id="prompt-count" style="color:var(--dim);font-size:.8rem">(0/900)</span></label>
+                <textarea id="stt-prompt" data-i18n-placeholder="stt.prompt.placeholder" placeholder="输入专业术语、人名、地名等" rows="5" oninput="updatePromptCount()">标点：Hello, hi! Yes? No. Thank you. 你好，谢谢！是的。云计算：AWS, Azure, GCP, S3, EC2, Lambda, CloudFront, ECS, EKS, RDS, DynamoDB, SageMaker, Bedrock. 大数据：Kafka, Flink, Spark, Hadoop, Hive, Presto, Airflow, EMR, Glue, Athena, Redshift, Kinesis. AI/ML：OpenAI, ChatGPT, Claude, Gemini, GPT-4, Whisper, TensorFlow, PyTorch, MLX, LLM, RAG, Vector, Embedding. 开发：Python, JavaScript, TypeScript, Java, Go, Rust, React, Vue, Node.js, Docker, Kubernetes, Git, GitHub, GitLab, CI/CD, API, REST, GraphQL, gRPC. 职场：announce, confirm, schedule, meeting, deadline, deliverable, stakeholder, alignment, sync-up, follow-up, action item, escalate, prioritize, bandwidth, capacity. 公司：Amazon, Google, Microsoft, Meta, Apple, Netflix, Uber, Airbnb, Salesforce, Oracle, IBM, SAP. 人名：Neo, Damon, Jason, Kevin, Kenny, Rob, Eric, Richard, Michelle, Ken.</textarea>
+                <div class="form-hint" data-i18n="stt.prompt.hint">💡 包含标点+专业术语+人名可大幅提高准确率。可根据场景自定义</div>
+            </div>
+            <div class="form-group">
+                <label class="form-label" data-i18n="stt.format">输出格式</label>
+                <select id="stt-format">
+                    <option value="text" selected data-i18n="stt.format.text">纯文本</option>
+                    <option value="json" data-i18n="stt.format.json">JSON (详细信息)</option>
+                    <option value="srt" data-i18n="stt.format.srt">SRT字幕</option>
+                    <option value="vtt" data-i18n="stt.format.vtt">VTT字幕</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="btn" onclick="transcribe()" id="stt-btn">
+            <span>▶</span> <span data-i18n="stt.transcribe">开始转录</span>
+        </button>
+        
+        <div class="result-area">
+            <div id="stt-progress" class="hidden" style="margin-bottom:1rem">
+                <div style="display:flex;justify-content:space-between;margin-bottom:0.5rem">
+                    <span data-i18n="status.processing">处理中...</span>
+                    <span id="stt-progress-text">0%</span>
+                </div>
+                <div style="width:100%;height:4px;background:var(--surface2);border-radius:2px;overflow:hidden">
+                    <div id="stt-progress-bar" style="width:0%;height:100%;background:linear-gradient(90deg,#ec4899,#8b5cf6);transition:width 0.3s"></div>
+                </div>
+            </div>
+            <canvas id="stt-waveform" class="hidden" width="800" height="100" style="width:100%;height:100px;background:#1a1a24;border-radius:8px;margin-bottom:1rem"></canvas>
+            <audio id="stt-audio" controls class="hidden" style="width:100%;margin-bottom:1rem"></audio>
+            <div id="stt-result" class="result-text hidden"></div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// API基础URL配置（全局变量）
+// Tauri环境检测：检查是否是file://或tauri://协议
+const IS_TAURI_ENV = window.location.protocol === 'tauri:' || (window.location.protocol === 'https:' && window.location.hostname === 'tauri.localhost');
+let API_BASE = IS_TAURI_ENV ? 'http://127.0.0.1:8002' : '';
+console.log('Is Tauri:', IS_TAURI_ENV);
+console.log('Protocol:', window.location.protocol);
+console.log('API_BASE:', API_BASE);
+
+// i18n Translation System
+const i18n = {
+    'zh-CN': {
+        subtitle: 'Apple Silicon 上的高性能语音处理',
+        'metric.ttfb': '首字节延迟',
+        'metric.start': '开始播放时间',
+        'metric.total': '总处理时间',
+        'metric.size': '数据大小',
+        'model.tts': 'TTS:',
+        'model.stt': 'STT:',
+        'model.memory': '内存:',
+        'model.manage': '管理',
+        'mode.tts': '📝 文字转语音',
+        'mode.stt': '🎤 语音转文字',
+        'mode.blend': '🎨 声音混合',
+        'tts.settings': '🎯 生成设置',
+        'tts.model': 'TTS模型',
+        'tts.model.kokoro': 'Kokoro-82M (推荐)',
+        'tts.model.kokoro4bit': 'Kokoro-82M-4bit (量化版)',
+        'tts.model.hint': '支持中英日等9种语言，54个声音',
+        'tts.text': '输入文本',
+        'tts.text.placeholder': '请输入要转换的文字...',
+        'tts.language': '语言',
+        'tts.voice': '声音',
+        'tts.speed': '语速:',
+        'tts.streaming': '流式播放模式（推荐）',
+        'tts.generate': '生成语音',
+        'tts.generating': '生成中...',
+        'tts.download': '下载音频',
+        'status.complete': '生成完成',
+        'status.processing': '处理中...',
+        'status.error': '错误',
+        'model.notLoaded': '未加载',
+        'model.unload': '卸载',
+        'api.testing': '测试中...',
+        'api.success': '连接成功',
+        'api.failed': '连接失败',
+        'api.models': '模型',
+        'api.memory': '内存',
+        'api.title': '🔗 API连接测试',
+        'api.test': '测试',
+        'model.ttsModels': 'TTS模型',
+        'model.sttModels': 'STT模型',
+        'stt.transcribe': '开始转录',
+        'stt.transcribing': '转录中...',
+        'stt.upload': '拖拽音频文件到此处或点击上传',
+        'stt.formats': '支持 WAV, MP3, FLAC, M4A',
+        'stt.settings': '🎯 转录设置',
+        'blend.blending': '混合并生成中...',
+        'stt.model': 'Whisper模型',
+        'stt.model.turbo': 'Turbo (推荐)',
+        'stt.language': '语言',
+        'stt.language.auto': '自动检测',
+        'stt.prompt': '提示词',
+        'stt.prompt.placeholder': '输入专业术语、人名、地名等',
+        'stt.prompt.hint': '💡 包含标点+专业术语+人名可大幅提高准确率。可根据场景自定义',
+        'stt.format': '输出格式',
+        'stt.format.text': '纯文本',
+        'stt.format.json': 'JSON (详细信息)',
+        'stt.format.srt': 'SRT字幕',
+        'stt.format.vtt': 'VTT字幕',
+        'stt.transcribe': '开始转录',
+        'blend.language': '语言',
+        'blend.voice1': '声音1',
+        'blend.weight1': '权重1:',
+        'blend.voice2': '声音2',
+        'blend.weight2': '权重2:',
+        'blend.test': '测试文本',
+        'blend.test.placeholder': '输入测试文本',
+        'blend.generate': '混合并测试'
+    },
+    'zh-TW': {
+        subtitle: 'Apple Silicon 上的高性能語音處理',
+        'metric.ttfb': '首字節延遲',
+        'metric.start': '開始播放時間',
+        'metric.total': '總處理時間',
+        'metric.size': '數據大小',
+        'model.tts': 'TTS:',
+        'model.stt': 'STT:',
+        'model.memory': '內存:',
+        'model.manage': '管理',
+        'mode.tts': '📝 文字轉語音',
+        'mode.stt': '🎤 語音轉文字',
+        'mode.blend': '🎨 聲音混合',
+        'tts.settings': '🎯 生成設置',
+        'tts.model': 'TTS模型',
+        'tts.model.kokoro': 'Kokoro-82M (推薦)',
+        'tts.model.kokoro4bit': 'Kokoro-82M-4bit (量化版)',
+        'tts.model.hint': '支持中英日等9種語言，54個聲音',
+        'tts.text': '輸入文本',
+        'tts.text.placeholder': '請輸入要轉換的文字...',
+        'tts.language': '語言',
+        'tts.voice': '聲音',
+        'tts.speed': '語速:',
+        'tts.streaming': '流式播放模式（推薦）',
+        'tts.generate': '生成語音',
+        'tts.download': '下載音頻',
+        'status.complete': '生成完成',
+        'status.processing': '處理中...',
+        'stt.upload': '拖拽音頻文件到此處或點擊上傳',
+        'stt.formats': '支持 WAV, MP3, FLAC, M4A',
+        'stt.settings': '🎯 轉錄設置',
+        'stt.model': 'Whisper模型',
+        'stt.model.turbo': 'Turbo (推薦)',
+        'stt.language': '語言',
+        'stt.language.auto': '自動檢測',
+        'stt.prompt': '提示詞',
+        'stt.prompt.placeholder': '輸入專業術語、人名、地名等',
+        'stt.prompt.hint': '💡 包含標點+專業術語+人名可大幅提高準確率。可根據場景自定義',
+        'stt.format': '輸出格式',
+        'stt.format.text': '純文本',
+        'stt.format.json': 'JSON (詳細信息)',
+        'stt.format.srt': 'SRT字幕',
+        'stt.format.vtt': 'VTT字幕',
+        'stt.transcribe': '開始轉錄',
+        'blend.language': '語言',
+        'blend.voice1': '聲音1',
+        'blend.weight1': '權重1:',
+        'blend.voice2': '聲音2',
+        'blend.weight2': '權重2:',
+        'blend.test': '測試文本',
+        'blend.test.placeholder': '輸入測試文本',
+        'blend.generate': '混合並測試'
+    },
+    'en': {
+        subtitle: 'High-performance speech processing on Apple Silicon',
+        'metric.ttfb': 'First Byte Latency',
+        'metric.start': 'Playback Start Time',
+        'metric.total': 'Total Processing Time',
+        'metric.size': 'Data Size',
+        'model.tts': 'TTS:',
+        'model.stt': 'STT:',
+        'model.memory': 'Memory:',
+        'model.manage': 'Manage',
+        'mode.tts': '📝 Text to Speech',
+        'mode.stt': '🎤 Speech to Text',
+        'mode.blend': '🎨 Voice Blending',
+        'tts.settings': '🎯 Generation Settings',
+        'tts.model': 'TTS Model',
+        'tts.model.kokoro': 'Kokoro-82M (Recommended)',
+        'tts.model.kokoro4bit': 'Kokoro-82M-4bit (Quantized)',
+        'tts.model.hint': 'Supports 9 languages including Chinese, English, Japanese with 54 voices',
+        'tts.text': 'Input Text',
+        'tts.text.placeholder': 'Enter text to convert...',
+        'tts.language': 'Language',
+        'tts.voice': 'Voice',
+        'tts.speed': 'Speed:',
+        'tts.streaming': 'Streaming Mode (Recommended)',
+        'tts.generate': 'Generate Speech',
+        'tts.generating': 'Generating...',
+        'tts.download': 'Download Audio',
+        'status.complete': 'Generation Complete',
+        'status.processing': 'Processing...',
+        'status.error': 'Error',
+        'model.notLoaded': 'Not Loaded',
+        'model.unload': 'Unload',
+        'api.testing': 'Testing...',
+        'api.success': 'Connected',
+        'api.failed': 'Failed',
+        'api.models': 'Models',
+        'api.memory': 'Memory',
+        'api.title': '🔗 API Connection Test',
+        'api.test': 'Test',
+        'model.ttsModels': 'TTS Models',
+        'model.sttModels': 'STT Models',
+        'stt.transcribe': 'Start Transcription',
+        'stt.transcribing': 'Transcribing...',
+        'stt.upload': 'Drag audio files here or click to upload',
+        'stt.formats': 'Supports WAV, MP3, FLAC, M4A',
+        'blend.blending': 'Blending and Generating...',
+        'stt.settings': '🎯 Transcription Settings',
+        'stt.model': 'Whisper Model',
+        'stt.model.turbo': 'Turbo (Recommended)',
+        'stt.language': 'Language',
+        'stt.language.auto': 'Auto Detect',
+        'stt.prompt': 'Prompt',
+        'stt.prompt.placeholder': 'Enter technical terms, names, places, etc.',
+        'stt.prompt.hint': '💡 Including punctuation + technical terms + names can significantly improve accuracy. Customize based on scenario',
+        'stt.format': 'Output Format',
+        'stt.format.text': 'Plain Text',
+        'stt.format.json': 'JSON (Detailed)',
+        'stt.format.srt': 'SRT Subtitles',
+        'stt.format.vtt': 'VTT Subtitles',
+        'stt.transcribe': 'Start Transcription',
+        'blend.language': 'Language',
+        'blend.voice1': 'Voice 1',
+        'blend.weight1': 'Weight 1:',
+        'blend.voice2': 'Voice 2',
+        'blend.weight2': 'Weight 2:',
+        'blend.test': 'Test Text',
+        'blend.test.placeholder': 'Enter test text',
+        'blend.generate': 'Blend and Test'
+    },
+    'ja': {
+        subtitle: 'Apple Silicon での高性能音声処理',
+        'metric.ttfb': '初回バイト遅延',
+        'metric.start': '再生開始時間',
+        'metric.total': '総処理時間',
+        'metric.size': 'データサイズ',
+        'model.tts': 'TTS:',
+        'model.stt': 'STT:',
+        'model.memory': 'メモリ:',
+        'model.manage': '管理',
+        'mode.tts': '📝 テキスト読み上げ',
+        'mode.stt': '🎤 音声認識',
+        'mode.blend': '🎨 音声ブレンド',
+        'tts.settings': '🎯 生成設定',
+        'tts.model': 'TTSモデル',
+        'tts.model.kokoro': 'Kokoro-82M (推奨)',
+        'tts.model.kokoro4bit': 'Kokoro-82M-4bit (量子化版)',
+        'tts.model.hint': '中英日など9言語、54音声をサポート',
+        'tts.text': '入力テキスト',
+        'tts.text.placeholder': '変換するテキストを入力...',
+        'tts.language': '言語',
+        'tts.voice': '音声',
+        'tts.speed': '速度:',
+        'tts.streaming': 'ストリーミングモード（推奨）',
+        'tts.generate': '音声生成',
+        'tts.download': 'オーディオダウンロード',
+        'status.complete': '生成完了',
+        'status.processing': '処理中...',
+        'stt.upload': 'オーディオファイルをドラッグまたはクリックしてアップロード',
+        'stt.formats': 'WAV, MP3, FLAC, M4A対応',
+        'stt.settings': '🎯 転写設定',
+        'stt.model': 'Whisperモデル',
+        'stt.model.turbo': 'Turbo (推奨)',
+        'stt.language': '言語',
+        'stt.language.auto': '自動検出',
+        'stt.prompt': 'プロンプト',
+        'stt.prompt.placeholder': '専門用語、人名、地名等を入力',
+        'stt.prompt.hint': '💡 句読点+専門用語+人名を含めると精度が大幅向上。シナリオに応じてカスタマイズ',
+        'stt.format': '出力形式',
+        'stt.format.text': 'プレーンテキスト',
+        'stt.format.json': 'JSON (詳細)',
+        'stt.format.srt': 'SRT字幕',
+        'stt.format.vtt': 'VTT字幕',
+        'stt.transcribe': '転写開始',
+        'blend.language': '言語',
+        'blend.voice1': '音声1',
+        'blend.weight1': '重み1:',
+        'blend.voice2': '音声2',
+        'blend.weight2': '重み2:',
+        'blend.test': 'テストテキスト',
+        'blend.test.placeholder': 'テストテキストを入力',
+        'blend.generate': 'ブレンドしてテスト'
+    },
+    'ko': {
+        subtitle: 'Apple Silicon에서의 고성능 음성 처리',
+        'metric.ttfb': '첫 바이트 지연시간',
+        'metric.start': '재생 시작 시간',
+        'metric.total': '총 처리 시간',
+        'metric.size': '데이터 크기',
+        'model.tts': 'TTS:',
+        'model.stt': 'STT:',
+        'model.memory': '메모리:',
+        'model.manage': '관리',
+        'mode.tts': '📝 텍스트 음성 변환',
+        'mode.stt': '🎤 음성 텍스트 변환',
+        'mode.blend': '🎨 음성 블렌딩',
+        'tts.settings': '🎯 생성 설정',
+        'tts.model': 'TTS 모델',
+        'tts.model.kokoro': 'Kokoro-82M (권장)',
+        'tts.model.kokoro4bit': 'Kokoro-82M-4bit (양자화 버전)',
+        'tts.model.hint': '중국어, 영어, 일본어 등 9개 언어, 54개 음성 지원',
+        'tts.text': '입력 텍스트',
+        'tts.text.placeholder': '변환할 텍스트를 입력하세요...',
+        'tts.language': '언어',
+        'tts.voice': '음성',
+        'tts.speed': '속도:',
+        'tts.streaming': '스트리밍 모드 (권장)',
+        'tts.generate': '음성 생성',
+        'tts.download': '오디오 다운로드',
+        'status.complete': '생성 완료',
+        'status.processing': '처리 중...',
+        'stt.upload': '오디오 파일을 드래그하거나 클릭하여 업로드',
+        'stt.formats': 'WAV, MP3, FLAC, M4A 지원',
+        'stt.settings': '🎯 전사 설정',
+        'stt.model': 'Whisper 모델',
+        'stt.model.turbo': 'Turbo (권장)',
+        'stt.language': '언어',
+        'stt.language.auto': '자동 감지',
+        'stt.prompt': '프롬프트',
+        'stt.prompt.placeholder': '전문 용어, 이름, 장소 등 입력',
+        'stt.prompt.hint': '💡 구두점+전문용어+이름을 포함하면 정확도가 크게 향상됩니다. 시나리오에 따라 사용자 정의',
+        'stt.format': '출력 형식',
+        'stt.format.text': '일반 텍스트',
+        'stt.format.json': 'JSON (상세)',
+        'stt.format.srt': 'SRT 자막',
+        'stt.format.vtt': 'VTT 자막',
+        'stt.transcribe': '전사 시작',
+        'blend.language': '언어',
+        'blend.voice1': '음성 1',
+        'blend.weight1': '가중치 1:',
+        'blend.voice2': '음성 2',
+        'blend.weight2': '가중치 2:',
+        'blend.test': '테스트 텍스트',
+        'blend.test.placeholder': '테스트 텍스트 입력',
+        'blend.generate': '블렌드 및 테스트'
+    },
+    'de': {
+        subtitle: 'Hochleistungs-Sprachverarbeitung auf Apple Silicon',
+        'metric.ttfb': 'Erste-Byte-Latenz',
+        'metric.start': 'Wiedergabe-Startzeit',
+        'metric.total': 'Gesamtverarbeitungszeit',
+        'metric.size': 'Datengröße',
+        'model.tts': 'TTS:',
+        'model.stt': 'STT:',
+        'model.memory': 'Speicher:',
+        'model.manage': 'Verwalten',
+        'mode.tts': '📝 Text zu Sprache',
+        'mode.stt': '🎤 Sprache zu Text',
+        'mode.blend': '🎨 Stimmen-Mischung',
+        'tts.settings': '🎯 Generierungseinstellungen',
+        'tts.model': 'TTS-Modell',
+        'tts.model.kokoro': 'Kokoro-82M (Empfohlen)',
+        'tts.model.kokoro4bit': 'Kokoro-82M-4bit (Quantisiert)',
+        'tts.model.hint': 'Unterstützt 9 Sprachen inkl. Chinesisch, Englisch, Japanisch mit 54 Stimmen',
+        'tts.text': 'Eingabetext',
+        'tts.text.placeholder': 'Text zum Konvertieren eingeben...',
+        'tts.language': 'Sprache',
+        'tts.voice': 'Stimme',
+        'tts.speed': 'Geschwindigkeit:',
+        'tts.streaming': 'Streaming-Modus (Empfohlen)',
+        'tts.generate': 'Sprache generieren',
+        'tts.download': 'Audio herunterladen',
+        'status.complete': 'Generierung abgeschlossen',
+        'status.processing': 'Verarbeitung...',
+        'stt.upload': 'Audiodateien hierher ziehen oder klicken zum Hochladen',
+        'stt.formats': 'Unterstützt WAV, MP3, FLAC, M4A',
+        'stt.settings': '🎯 Transkriptionseinstellungen',
+        'stt.model': 'Whisper-Modell',
+        'stt.model.turbo': 'Turbo (Empfohlen)',
+        'stt.language': 'Sprache',
+        'stt.language.auto': 'Automatisch erkennen',
+        'stt.prompt': 'Eingabeaufforderung',
+        'stt.prompt.placeholder': 'Fachbegriffe, Namen, Orte usw. eingeben',
+        'stt.prompt.hint': '💡 Satzzeichen + Fachbegriffe + Namen können die Genauigkeit erheblich verbessern. Je nach Szenario anpassen',
+        'stt.format': 'Ausgabeformat',
+        'stt.format.text': 'Klartext',
+        'stt.format.json': 'JSON (Detailliert)',
+        'stt.format.srt': 'SRT-Untertitel',
+        'stt.format.vtt': 'VTT-Untertitel',
+        'stt.transcribe': 'Transkription starten',
+        'blend.language': 'Sprache',
+        'blend.voice1': 'Stimme 1',
+        'blend.weight1': 'Gewicht 1:',
+        'blend.voice2': 'Stimme 2',
+        'blend.weight2': 'Gewicht 2:',
+        'blend.test': 'Testtext',
+        'blend.test.placeholder': 'Testtext eingeben',
+        'blend.generate': 'Mischen und testen'
+    },
+    'fr': {
+        subtitle: 'Traitement vocal haute performance sur Apple Silicon',
+        'metric.ttfb': 'Latence du premier octet',
+        'metric.start': 'Temps de début de lecture',
+        'metric.total': 'Temps de traitement total',
+        'metric.size': 'Taille des données',
+        'model.tts': 'TTS:',
+        'model.stt': 'STT:',
+        'model.memory': 'Mémoire:',
+        'model.manage': 'Gérer',
+        'mode.tts': '📝 Texte vers parole',
+        'mode.stt': '🎤 Parole vers texte',
+        'mode.blend': '🎨 Mélange de voix',
+        'tts.settings': '🎯 Paramètres de génération',
+        'tts.model': 'Modèle TTS',
+        'tts.model.kokoro': 'Kokoro-82M (Recommandé)',
+        'tts.model.kokoro4bit': 'Kokoro-82M-4bit (Quantifié)',
+        'tts.model.hint': 'Prend en charge 9 langues dont chinois, anglais, japonais avec 54 voix',
+        'tts.text': 'Texte d\'entrée',
+        'tts.text.placeholder': 'Entrez le texte à convertir...',
+        'tts.language': 'Langue',
+        'tts.voice': 'Voix',
+        'tts.speed': 'Vitesse:',
+        'tts.streaming': 'Mode streaming (Recommandé)',
+        'tts.generate': 'Générer la parole',
+        'tts.download': 'Télécharger l\'audio',
+        'status.complete': 'Génération terminée',
+        'status.processing': 'Traitement en cours...',
+        'stt.upload': 'Glissez les fichiers audio ici ou cliquez pour télécharger',
+        'stt.formats': 'Prend en charge WAV, MP3, FLAC, M4A',
+        'stt.settings': '🎯 Paramètres de transcription',
+        'stt.model': 'Modèle Whisper',
+        'stt.model.turbo': 'Turbo (Recommandé)',
+        'stt.language': 'Langue',
+        'stt.language.auto': 'Détection automatique',
+        'stt.prompt': 'Invite',
+        'stt.prompt.placeholder': 'Entrez les termes techniques, noms, lieux, etc.',
+        'stt.prompt.hint': '💡 Inclure ponctuation + termes techniques + noms peut considérablement améliorer la précision. Personnaliser selon le scénario',
+        'stt.format': 'Format de sortie',
+        'stt.format.text': 'Texte brut',
+        'stt.format.json': 'JSON (Détaillé)',
+        'stt.format.srt': 'Sous-titres SRT',
+        'stt.format.vtt': 'Sous-titres VTT',
+        'stt.transcribe': 'Commencer la transcription',
+        'blend.language': 'Langue',
+        'blend.voice1': 'Voix 1',
+        'blend.weight1': 'Poids 1:',
+        'blend.voice2': 'Voix 2',
+        'blend.weight2': 'Poids 2:',
+        'blend.test': 'Texte de test',
+        'blend.test.placeholder': 'Entrez le texte de test',
+        'blend.generate': 'Mélanger et tester'
+    },
+    'it': {
+        subtitle: 'Elaborazione vocale ad alte prestazioni su Apple Silicon',
+        'metric.ttfb': 'Latenza primo byte',
+        'metric.start': 'Tempo di inizio riproduzione',
+        'metric.total': 'Tempo di elaborazione totale',
+        'metric.size': 'Dimensione dati',
+        'model.tts': 'TTS:',
+        'model.stt': 'STT:',
+        'model.memory': 'Memoria:',
+        'model.manage': 'Gestisci',
+        'mode.tts': '📝 Testo in voce',
+        'mode.stt': '🎤 Voce in testo',
+        'mode.blend': '🎨 Miscelazione vocale',
+        'tts.settings': '🎯 Impostazioni generazione',
+        'tts.model': 'Modello TTS',
+        'tts.model.kokoro': 'Kokoro-82M (Consigliato)',
+        'tts.model.kokoro4bit': 'Kokoro-82M-4bit (Quantizzato)',
+        'tts.model.hint': 'Supporta 9 lingue incluso cinese, inglese, giapponese con 54 voci',
+        'tts.text': 'Testo di input',
+        'tts.text.placeholder': 'Inserisci il testo da convertire...',
+        'tts.language': 'Lingua',
+        'tts.voice': 'Voce',
+        'tts.speed': 'Velocità:',
+        'tts.streaming': 'Modalità streaming (Consigliata)',
+        'tts.generate': 'Genera voce',
+        'tts.download': 'Scarica audio',
+        'status.complete': 'Generazione completata',
+        'status.processing': 'Elaborazione in corso...',
+        'stt.upload': 'Trascina i file audio qui o clicca per caricare',
+        'stt.formats': 'Supporta WAV, MP3, FLAC, M4A',
+        'stt.settings': '🎯 Impostazioni trascrizione',
+        'stt.model': 'Modello Whisper',
+        'stt.model.turbo': 'Turbo (Consigliato)',
+        'stt.language': 'Lingua',
+        'stt.language.auto': 'Rilevamento automatico',
+        'stt.prompt': 'Prompt',
+        'stt.prompt.placeholder': 'Inserisci termini tecnici, nomi, luoghi, ecc.',
+        'stt.prompt.hint': '💡 Includere punteggiatura + termini tecnici + nomi può migliorare significativamente la precisione. Personalizza in base allo scenario',
+        'stt.format': 'Formato output',
+        'stt.format.text': 'Testo semplice',
+        'stt.format.json': 'JSON (Dettagliato)',
+        'stt.format.srt': 'Sottotitoli SRT',
+        'stt.format.vtt': 'Sottotitoli VTT',
+        'stt.transcribe': 'Inizia trascrizione',
+        'blend.language': 'Lingua',
+        'blend.voice1': 'Voce 1',
+        'blend.weight1': 'Peso 1:',
+        'blend.voice2': 'Voce 2',
+        'blend.weight2': 'Peso 2:',
+        'blend.test': 'Testo di prova',
+        'blend.test.placeholder': 'Inserisci testo di prova',
+        'blend.generate': 'Miscela e testa'
+    },
+    'ru': {
+        subtitle: 'Высокопроизводительная обработка речи на Apple Silicon',
+        'metric.ttfb': 'Задержка первого байта',
+        'metric.start': 'Время начала воспроизведения',
+        'metric.total': 'Общее время обработки',
+        'metric.size': 'Размер данных',
+        'model.tts': 'TTS:',
+        'model.stt': 'STT:',
+        'model.memory': 'Память:',
+        'model.manage': 'Управление',
+        'mode.tts': '📝 Текст в речь',
+        'mode.stt': '🎤 Речь в текст',
+        'mode.blend': '🎨 Смешивание голосов',
+        'tts.settings': '🎯 Настройки генерации',
+        'tts.model': 'Модель TTS',
+        'tts.model.kokoro': 'Kokoro-82M (Рекомендуется)',
+        'tts.model.kokoro4bit': 'Kokoro-82M-4bit (Квантованная)',
+        'tts.model.hint': 'Поддерживает 9 языков включая китайский, английский, японский с 54 голосами',
+        'tts.text': 'Входной текст',
+        'tts.text.placeholder': 'Введите текст для преобразования...',
+        'tts.language': 'Язык',
+        'tts.voice': 'Голос',
+        'tts.speed': 'Скорость:',
+        'tts.streaming': 'Потоковый режим (Рекомендуется)',
+        'tts.generate': 'Генерировать речь',
+        'tts.download': 'Скачать аудио',
+        'status.complete': 'Генерация завершена',
+        'status.processing': 'Обработка...',
+        'stt.upload': 'Перетащите аудиофайлы сюда или нажмите для загрузки',
+        'stt.formats': 'Поддерживает WAV, MP3, FLAC, M4A',
+        'stt.settings': '🎯 Настройки транскрипции',
+        'stt.model': 'Модель Whisper',
+        'stt.model.turbo': 'Turbo (Рекомендуется)',
+        'stt.language': 'Язык',
+        'stt.language.auto': 'Автоопределение',
+        'stt.prompt': 'Подсказка',
+        'stt.prompt.placeholder': 'Введите технические термины, имена, места и т.д.',
+        'stt.prompt.hint': '💡 Включение пунктуации + технических терминов + имен может значительно повысить точность. Настройте в зависимости от сценария',
+        'stt.format': 'Формат вывода',
+        'stt.format.text': 'Обычный текст',
+        'stt.format.json': 'JSON (Подробно)',
+        'stt.format.srt': 'Субтитры SRT',
+        'stt.format.vtt': 'Субтитры VTT',
+        'stt.transcribe': 'Начать транскрипцию',
+        'blend.language': 'Язык',
+        'blend.voice1': 'Голос 1',
+        'blend.weight1': 'Вес 1:',
+        'blend.voice2': 'Голос 2',
+        'blend.weight2': 'Вес 2:',
+        'blend.test': 'Тестовый текст',
+        'blend.test.placeholder': 'Введите тестовый текст',
+        'blend.generate': 'Смешать и протестировать'
+    },
+    'th': {
+        subtitle: 'การประมวลผลเสียงประสิทธิภาพสูงบน Apple Silicon',
+        'metric.ttfb': 'ความล่าช้าไบต์แรก',
+        'metric.start': 'เวลาเริ่มเล่น',
+        'metric.total': 'เวลาประมวลผลทั้งหมด',
+        'metric.size': 'ขนาดข้อมูล',
+        'model.tts': 'TTS:',
+        'model.stt': 'STT:',
+        'model.memory': 'หน่วยความจำ:',
+        'model.manage': 'จัดการ',
+        'mode.tts': '📝 ข้อความเป็นเสียง',
+        'mode.stt': '🎤 เสียงเป็นข้อความ',
+        'mode.blend': '🎨 ผสมเสียง',
+        'tts.settings': '🎯 การตั้งค่าการสร้าง',
+        'tts.model': 'โมเดล TTS',
+        'tts.model.kokoro': 'Kokoro-82M (แนะนำ)',
+        'tts.model.kokoro4bit': 'Kokoro-82M-4bit (เวอร์ชันบีบอัด)',
+        'tts.model.hint': 'รองรับ 9 ภาษารวมถึงจีน อังกฤษ ญี่ปุ่น ด้วย 54 เสียง',
+        'tts.text': 'ข้อความป้อนเข้า',
+        'tts.text.placeholder': 'ป้อนข้อความที่จะแปลง...',
+        'tts.language': 'ภาษา',
+        'tts.voice': 'เสียง',
+        'tts.speed': 'ความเร็ว:',
+        'tts.streaming': 'โหมดสตรีมมิ่ง (แนะนำ)',
+        'tts.generate': 'สร้างเสียง',
+        'tts.download': 'ดาวน์โหลดเสียง',
+        'status.complete': 'การสร้างเสร็จสิ้น',
+        'status.processing': 'กำลังประมวลผล...',
+        'stt.upload': 'ลากไฟล์เสียงมาที่นี่หรือคลิกเพื่ออัปโหลด',
+        'stt.formats': 'รองรับ WAV, MP3, FLAC, M4A',
+        'stt.settings': '🎯 การตั้งค่าการถอดเสียง',
+        'stt.model': 'โมเดล Whisper',
+        'stt.model.turbo': 'Turbo (แนะนำ)',
+        'stt.language': 'ภาษา',
+        'stt.language.auto': 'ตรวจจับอัตโนมัติ',
+        'stt.prompt': 'พรอมต์',
+        'stt.prompt.placeholder': 'ป้อนศัพท์เทคนิค ชื่อ สถานที่ ฯลฯ',
+        'stt.prompt.hint': '💡 การรวมเครื่องหมายวรรคตอน + ศัพท์เทคนิค + ชื่อ สามารถปรับปรุงความแม่นยำได้อย่างมาก ปรับแต่งตามสถานการณ์',
+        'stt.format': 'รูปแบบเอาต์พุต',
+        'stt.format.text': 'ข้อความธรรมดา',
+        'stt.format.json': 'JSON (รายละเอียด)',
+        'stt.format.srt': 'ซับไตเติล SRT',
+        'stt.format.vtt': 'ซับไตเติล VTT',
+        'stt.transcribe': 'เริ่มถอดเสียง',
+        'blend.language': 'ภาษา',
+        'blend.voice1': 'เสียง 1',
+        'blend.weight1': 'น้ำหนัก 1:',
+        'blend.voice2': 'เสียง 2',
+        'blend.weight2': 'น้ำหนัก 2:',
+        'blend.test': 'ข้อความทดสอบ',
+        'blend.test.placeholder': 'ป้อนข้อความทดสอบ',
+        'blend.generate': 'ผสมและทดสอบ'
+    },
+    'ar': {
+        subtitle: 'معالجة الصوت عالية الأداء على Apple Silicon',
+        'metric.ttfb': 'زمن استجابة البايت الأول',
+        'metric.start': 'وقت بدء التشغيل',
+        'metric.total': 'إجمالي وقت المعالجة',
+        'metric.size': 'حجم البيانات',
+        'model.tts': 'TTS:',
+        'model.stt': 'STT:',
+        'model.memory': 'الذاكرة:',
+        'model.manage': 'إدارة',
+        'mode.tts': '📝 النص إلى كلام',
+        'mode.stt': '🎤 الكلام إلى نص',
+        'mode.blend': '🎨 مزج الأصوات',
+        'tts.settings': '🎯 إعدادات التوليد',
+        'tts.model': 'نموذج TTS',
+        'tts.model.kokoro': 'Kokoro-82M (موصى به)',
+        'tts.model.kokoro4bit': 'Kokoro-82M-4bit (مضغوط)',
+        'tts.model.hint': 'يدعم 9 لغات بما في ذلك الصينية والإنجليزية واليابانية مع 54 صوت',
+        'tts.text': 'النص المدخل',
+        'tts.text.placeholder': 'أدخل النص للتحويل...',
+        'tts.language': 'اللغة',
+        'tts.voice': 'الصوت',
+        'tts.speed': 'السرعة:',
+        'tts.streaming': 'وضع البث (موصى به)',
+        'tts.generate': 'توليد الكلام',
+        'tts.download': 'تحميل الصوت',
+        'status.complete': 'اكتمل التوليد',
+        'status.processing': 'جاري المعالجة...',
+        'stt.upload': 'اسحب الملفات الصوتية هنا أو انقر للرفع',
+        'stt.formats': 'يدعم WAV, MP3, FLAC, M4A',
+        'stt.settings': '🎯 إعدادات النسخ',
+        'stt.model': 'نموذج Whisper',
+        'stt.model.turbo': 'Turbo (موصى به)',
+        'stt.language': 'اللغة',
+        'stt.language.auto': 'كشف تلقائي',
+        'stt.prompt': 'المطالبة',
+        'stt.prompt.placeholder': 'أدخل المصطلحات التقنية والأسماء والأماكن إلخ',
+        'stt.prompt.hint': '💡 تضمين علامات الترقيم + المصطلحات التقنية + الأسماء يمكن أن يحسن الدقة بشكل كبير. خصص حسب السيناريو',
+        'stt.format': 'تنسيق الإخراج',
+        'stt.format.text': 'نص عادي',
+        'stt.format.json': 'JSON (مفصل)',
+        'stt.format.srt': 'ترجمات SRT',
+        'stt.format.vtt': 'ترجمات VTT',
+        'stt.transcribe': 'بدء النسخ',
+        'blend.language': 'اللغة',
+        'blend.voice1': 'الصوت 1',
+        'blend.weight1': 'الوزن 1:',
+        'blend.voice2': 'الصوت 2',
+        'blend.weight2': 'الوزن 2:',
+        'blend.test': 'نص الاختبار',
+        'blend.test.placeholder': 'أدخل نص الاختبار',
+        'blend.generate': 'مزج واختبار'
+    },
+    'hi': {
+        subtitle: 'Apple Silicon पर उच्च-प्रदर्शन वाक् प्रसंस्करण',
+        'metric.ttfb': 'पहली बाइट विलंबता',
+        'metric.start': 'प्लेबैक प्रारंभ समय',
+        'metric.total': 'कुल प्रसंस्करण समय',
+        'metric.size': 'डेटा आकार',
+        'model.tts': 'TTS:',
+        'model.stt': 'STT:',
+        'model.memory': 'मेमोरी:',
+        'model.manage': 'प्रबंधन',
+        'mode.tts': '📝 टेक्स्ट टू स्पीच',
+        'mode.stt': '🎤 स्पीच टू टेक्स्ट',
+        'mode.blend': '🎨 आवाज़ मिश्रण',
+        'tts.settings': '🎯 जेनरेशन सेटिंग्स',
+        'tts.model': 'TTS मॉडल',
+        'tts.model.kokoro': 'Kokoro-82M (अनुशंसित)',
+        'tts.model.kokoro4bit': 'Kokoro-82M-4bit (क्वांटाइज़्ड)',
+        'tts.model.hint': 'चीनी, अंग्रेजी, जापानी सहित 9 भाषाओं का समर्थन 54 आवाज़ों के साथ',
+        'tts.text': 'इनपुट टेक्स्ट',
+        'tts.text.placeholder': 'कन्वर्ट करने के लिए टेक्स्ट दर्ज करें...',
+        'tts.language': 'भाषा',
+        'tts.voice': 'आवाज़',
+        'tts.speed': 'गति:',
+        'tts.streaming': 'स्ट्रीमिंग मोड (अनुशंसित)',
+        'tts.generate': 'स्पीच जेनरेट करें',
+        'tts.download': 'ऑडियो डाउनलोड करें',
+        'status.complete': 'जेनरेशन पूर्ण',
+        'status.processing': 'प्रसंस्करण...',
+        'stt.upload': 'ऑडियो फाइलें यहाँ खींचें या अपलोड के लिए क्लिक करें',
+        'stt.formats': 'WAV, MP3, FLAC, M4A समर्थित',
+        'stt.settings': '🎯 ट्रांसक्रिप्शन सेटिंग्स',
+        'stt.model': 'Whisper मॉडल',
+        'stt.model.turbo': 'Turbo (अनुशंसित)',
+        'stt.language': 'भाषा',
+        'stt.language.auto': 'स्वचालित पहचान',
+        'stt.prompt': 'प्रॉम्प्ट',
+        'stt.prompt.placeholder': 'तकनीकी शब्द, नाम, स्थान आदि दर्ज करें',
+        'stt.prompt.hint': '💡 विराम चिह्न + तकनीकी शब्द + नाम शामिल करने से सटीकता में काफी सुधार हो सकता है। परिदृश्य के अनुसार अनुकूलित करें',
+        'stt.format': 'आउटपुट फॉर्मेट',
+        'stt.format.text': 'सादा टेक्स्ट',
+        'stt.format.json': 'JSON (विस्तृत)',
+        'stt.format.srt': 'SRT सबटाइटल',
+        'stt.format.vtt': 'VTT सबटाइटल',
+        'stt.transcribe': 'ट्रांसक्रिप्शन शुरू करें',
+        'blend.language': 'भाषा',
+        'blend.voice1': 'आवाज़ 1',
+        'blend.weight1': 'वेट 1:',
+        'blend.voice2': 'आवाज़ 2',
+        'blend.weight2': 'वेट 2:',
+        'blend.test': 'टेस्ट टेक्स्ट',
+        'blend.test.placeholder': 'टेस्ट टेक्स्ट दर्ज करें',
+        'blend.generate': 'मिश्रण और परीक्षण'
+    }
+};
+
+// i18n Functions
+let currentLanguage = 'zh-CN';
+
+function setLanguage(lang) {
+    currentLanguage = lang;
+    localStorage.setItem('mlx-audio-language', lang);
+    document.getElementById('language-selector').value = lang;
+    applyTranslations();
+    updateVoices();  // 切换语言后重新填充声音列表
+}
+
+function applyTranslations() {
+    const translations = i18n[currentLanguage] || i18n['zh-CN'];
+    
+    // Apply translations to elements with data-i18n attributes
+    document.querySelectorAll('[data-i18n]').forEach(element => {
+        const key = element.getAttribute('data-i18n');
+        if (translations[key]) {
+            element.textContent = translations[key];
+        }
+    });
+    
+    // Apply placeholder translations
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(element => {
+        const key = element.getAttribute('data-i18n-placeholder');
+        if (translations[key]) {
+            element.placeholder = translations[key];
+        }
+    });
+}
+
+function initializeLanguage() {
+    const savedLang = localStorage.getItem('mlx-audio-language') || 'en';  // 默认英文
+    setLanguage(savedLang);
+}
+
+class StreamPlayer {
+    constructor() {
+        this.audioContext = null;
+        this.nextPlayTime = 0;
+        this.samples = [];
+        this.isFirstChunk = true;
+        this.allPcmData = [];
+        this.sampleRate = 24000;
+        this.allSamples = [];
+    }
+
+    drawFullWaveform() {
+        const canvas = document.getElementById('waveform');
+        if (!canvas || this.allSamples.length === 0) return;
+        canvas.classList.remove('hidden');
+        
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        // 清空
+        ctx.fillStyle = '#1a1a24';
+        ctx.fillRect(0, 0, width, height);
+        
+        // 下采样
+        const step = Math.ceil(this.allSamples.length / width);
+        
+        ctx.strokeStyle = '#ec4899';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        
+        for (let i = 0; i < width; i++) {
+            const start = i * step;
+            const end = Math.min(start + step, this.allSamples.length);
+            let max = 0;
+            for (let j = start; j < end; j++) {
+                max = Math.max(max, Math.abs(this.allSamples[j]));
+            }
+            
+            const x = i;
+            const y = height / 2 - (max * height / 2);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        
+        // 镜像
+        ctx.beginPath();
+        for (let i = 0; i < width; i++) {
+            const start = i * step;
+            const end = Math.min(start + step, this.allSamples.length);
+            let max = 0;
+            for (let j = start; j < end; j++) {
+                max = Math.max(max, Math.abs(this.allSamples[j]));
+            }
+            const x = i;
+            const y = height / 2 + (max * height / 2);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+
+    startDynamicWaveform() {
+        const canvas = document.getElementById('waveform');
+        if (!canvas) return;
+        canvas.classList.remove('hidden');
+        
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        const bufferLength = this.analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        
+        const draw = () => {
+            requestAnimationFrame(draw);
+            this.analyser.getByteFrequencyData(dataArray);
+            
+            // 渐变背景
+            const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+            bgGradient.addColorStop(0, '#1a1a24');
+            bgGradient.addColorStop(1, '#0a0a0f');
+            ctx.fillStyle = bgGradient;
+            ctx.fillRect(0, 0, width, height);
+            
+            const barWidth = (width / bufferLength) * 2.5;
+            let x = 0;
+            
+            for (let i = 0; i < bufferLength; i++) {
+                const barHeight = (dataArray[i] / 255) * height * 0.8;
+                
+                // 彩色渐变条
+                const barGradient = ctx.createLinearGradient(0, height - barHeight, 0, height);
+                barGradient.addColorStop(0, '#ec4899');
+                barGradient.addColorStop(0.5, '#8b5cf6');
+                barGradient.addColorStop(1, '#3b82f6');
+                
+                ctx.fillStyle = barGradient;
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = '#ec4899';
+                ctx.fillRect(x, height - barHeight, barWidth, barHeight);
+                
+                x += barWidth + 1;
+            }
+            
+            ctx.shadowBlur = 0;
+        };
+        
+        draw();
+    }
+
+    async streamTTS(url, data) {
+        const startTime = performance.now();
+        let firstByteTime = null;
+        let firstPlayTime = null;
+        let totalSize = 0;
+        
+        // 重置状态
+        this.allSamples = [];
+        this.samples = [];
+        this.isFirstChunk = true;
+        this.allPcmData = [];
+
+        try {
+            updateMetrics('processing');
+            
+            // 使用流式端点
+            const response = await fetch(API_BASE + '/v1/audio/speech/stream', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+            this.audioContext = new (window.AudioContext || window.webkitAudioContext)({sampleRate: this.sampleRate});
+            if (this.audioContext.state === 'suspended') await this.audioContext.resume();
+            this.nextPlayTime = this.audioContext.currentTime + 0.1;
+            
+            // 创建分析器用于动态波形
+            this.analyser = this.audioContext.createAnalyser();
+            this.analyser.fftSize = 2048;
+            this.analyser.connect(this.audioContext.destination);
+            
+            // 启动动态波形
+            this.startDynamicWaveform();
+
+            const reader = response.body.getReader();
+            let pendingBytes = new Uint8Array();
+            
+            while (true) {
+                const {done, value} = await reader.read();
+                
+                if (done) {
+                    this.playBuffer();
+                    break;
+                }
+
+                if (!firstByteTime) {
+                    firstByteTime = performance.now();
+                    updateMetric('ttfb', firstByteTime - startTime);
+                }
+
+                totalSize += value.length;
+                this.allPcmData.push(new Uint8Array(value));
+                
+                // 实时更新数据大小和处理时间
+                updateMetric('size', totalSize / 1024);
+                updateMetric('total', performance.now() - startTime);
+                
+                // 合并字节
+                const combined = new Uint8Array(pendingBytes.length + value.length);
+                combined.set(pendingBytes);
+                combined.set(value, pendingBytes.length);
+                
+                // 字节对齐（Int16 = 2 bytes）
+                const validLength = Math.floor(combined.length / 2) * 2;
+                const validData = combined.slice(0, validLength);
+                pendingBytes = combined.slice(validLength);
+                
+                // PCM Int16 → Float32
+                const alignedBuffer = new ArrayBuffer(validData.length);
+                new Uint8Array(alignedBuffer).set(validData);
+                const int16Array = new Int16Array(alignedBuffer);
+                
+                for (let i = 0; i < int16Array.length; i++) {
+                    const sample = int16Array[i] / 32768;
+                    this.samples.push(sample);
+                    this.allSamples.push(sample);
+                }
+                
+                // 累积更少数据就开始播放（250ms而非500ms）
+                if (this.samples.length >= 6000 && !firstPlayTime) {
+                    firstPlayTime = performance.now();
+                    updateMetric('start', firstPlayTime - startTime);
+                }
+                
+                if (this.samples.length >= 6000) {
+                    this.playBuffer();
+                }
+            }
+
+            this.playBuffer();
+            const totalTime = performance.now() - startTime;
+            updateMetric('total', totalTime);
+            updateMetric('size', totalSize / 1024);
+            updateMetrics('success');
+
+        } catch (error) {
+            updateMetrics('error');
+            throw error;
+        }
+    }
+
+    playBuffer() {
+        if (this.samples.length === 0) return;
+        
+        const maxSamples = 48000;
+        while (this.samples.length > 0) {
+            const chunkSize = Math.min(this.samples.length, maxSamples);
+            const chunk = this.samples.splice(0, chunkSize);
+            
+            const float32Array = new Float32Array(chunk);
+            
+            // 首块淡入
+            if (this.isFirstChunk) {
+                const fadeLen = Math.min(1024, float32Array.length);
+                for (let i = 0; i < fadeLen; i++) {
+                    float32Array[i] *= i / fadeLen;
+                }
+                this.isFirstChunk = false;
+            }
+            
+            const audioBuffer = this.audioContext.createBuffer(1, float32Array.length, this.sampleRate);
+            audioBuffer.getChannelData(0).set(float32Array);
+            
+            const source = this.audioContext.createBufferSource();
+            source.buffer = audioBuffer;
+            source.connect(this.analyser);
+            
+            // 防止buffer underrun
+            if (this.nextPlayTime < this.audioContext.currentTime - 0.1) {
+                this.nextPlayTime = this.audioContext.currentTime + 0.05;
+            }
+            
+            source.start(this.nextPlayTime);
+            this.nextPlayTime += audioBuffer.duration;
+            
+            // 绘制波形
+            this.drawWaveform(float32Array);
+        }
+    }
+    
+    drawWaveform(audioData) {
+        const canvas = document.getElementById('waveform');
+        if (!canvas) return;
+        canvas.classList.remove('hidden');
+        
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+        
+        // 下采样
+        const step = Math.ceil(audioData.length / width);
+        const samples = [];
+        for (let i = 0; i < width; i++) {
+            const start = i * step;
+            const end = Math.min(start + step, audioData.length);
+            let max = 0;
+            for (let j = start; j < end; j++) {
+                max = Math.max(max, Math.abs(audioData[j]));
+            }
+            samples.push(max);
+        }
+        
+        // 绘制
+        ctx.fillStyle = '#1a1a24';
+        ctx.fillRect(0, 0, width, height);
+        ctx.strokeStyle = '#ec4899';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        
+        for (let i = 0; i < samples.length; i++) {
+            const x = i;
+            const y = height / 2 - (samples[i] * height / 2);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+        
+        // 镜像下半部分
+        ctx.beginPath();
+        for (let i = 0; i < samples.length; i++) {
+            const x = i;
+            const y = height / 2 + (samples[i] * height / 2);
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+    }
+}
+
+const VOICES = {
+    a: [
+        {v:'af_heart',n:'Heart ♀'},{v:'af_nova',n:'Nova ♀'},{v:'af_bella',n:'Bella ♀'},
+        {v:'af_alloy',n:'Alloy ♀'},{v:'af_aoede',n:'Aoede ♀'},{v:'af_jessica',n:'Jessica ♀'},
+        {v:'af_kore',n:'Kore ♀'},{v:'af_nicole',n:'Nicole ♀'},{v:'af_river',n:'River ♀'},
+        {v:'af_sarah',n:'Sarah ♀'},{v:'af_sky',n:'Sky ♀'},
+        {v:'am_adam',n:'Adam ♂'},{v:'am_michael',n:'Michael ♂'},{v:'am_echo',n:'Echo ♂'},
+        {v:'am_eric',n:'Eric ♂'},{v:'am_fenrir',n:'Fenrir ♂'},{v:'am_liam',n:'Liam ♂'},
+        {v:'am_onyx',n:'Onyx ♂'},{v:'am_puck',n:'Puck ♂'},{v:'am_santa',n:'Santa ♂'}
+    ],
+    b: [
+        {v:'bf_emma',n:'Emma ♀'},{v:'bf_isabella',n:'Isabella ♀'},{v:'bf_alice',n:'Alice ♀'},
+        {v:'bf_lily',n:'Lily ♀'},{v:'bm_george',n:'George ♂'},{v:'bm_lewis',n:'Lewis ♂'},
+        {v:'bm_daniel',n:'Daniel ♂'},{v:'bm_fable',n:'Fable ♂'}
+    ],
+    z: [
+        {v:'zf_xiaobei',n:'小贝 ♀'},{v:'zf_xiaoni',n:'小妮 ♀'},{v:'zf_xiaoxiao',n:'小小 ♀'},
+        {v:'zf_xiaoyi',n:'小艺 ♀'},{v:'zm_yunjian',n:'云健 ♂'},{v:'zm_yunxi',n:'云希 ♂'},
+        {v:'zm_yunxia',n:'云霞 ♂'},{v:'zm_yunyang',n:'云扬 ♂'}
+    ],
+    j: [
+        {v:'jf_alpha',n:'Alpha ♀'},{v:'jf_gongitsune',n:'Gongitsune ♀'},
+        {v:'jf_nezumi',n:'Nezumi ♀'},{v:'jf_tebukuro',n:'Tebukuro ♀'},
+        {v:'jm_kumo',n:'Kumo ♂'}
+    ],
+    e: [{v:'ef_dora',n:'Dora ♀'},{v:'em_alex',n:'Alex ♂'},{v:'em_santa',n:'Santa ♂'}],
+    f: [{v:'ff_siwis',n:'Siwis ♀'}],
+    h: [{v:'hf_alpha',n:'Alpha ♀'},{v:'hf_beta',n:'Beta ♀'},{v:'hm_omega',n:'Omega ♂'},{v:'hm_psi',n:'Psi ♂'}],
+    i: [{v:'if_sara',n:'Sara ♀'},{v:'im_nicola',n:'Nicola ♂'}],
+    p: [{v:'pf_dora',n:'Dora ♀'},{v:'pm_alex',n:'Alex ♂'},{v:'pm_santa',n:'Santa ♂'}]
+};
+
+let currentMode = 'tts';
+let streamPlayer = new StreamPlayer();
+
+function setMode(mode) {
+    currentMode = mode;
+    ['tts','stt'].forEach(m => {
+        document.getElementById('mode-'+m).classList.toggle('active', m===mode);
+        document.getElementById('panel-'+m).classList.toggle('hidden', m!==mode);
+    });
+    
+    // 根据模式更新指标标签
+    if(mode === 'stt') {
+        document.querySelector('#ttfb-card .metric-label').textContent = '处理耗时';
+        document.querySelector('#start-card .metric-label').textContent = '音频时长';
+        document.querySelector('#start-card .metric-unit').textContent = 's';
+        document.querySelector('#total-card .metric-label').textContent = '处理速度';
+        document.querySelector('#total-card .metric-unit').textContent = '';  // 移除ms单位
+        document.querySelector('#size-card .metric-label').textContent = '文件大小';
+    } else {
+        document.querySelector('#ttfb-card .metric-label').textContent = '首字节延迟';
+        document.querySelector('#start-card .metric-label').textContent = '开始播放';
+        document.querySelector('#start-card .metric-unit').textContent = 'ms';
+        document.querySelector('#total-card .metric-label').textContent = '总处理时间';
+        document.querySelector('#size-card .metric-label').textContent = '数据大小';
+    }
+    
+    resetMetrics();
+}
+
+function updateVoices() {
+    const lang = document.getElementById('tts-lang').value;
+    const sel = document.getElementById('tts-voice');
+    sel.innerHTML = VOICES[lang].map(v => `<option value="${v.v}">${v.n}</option>`).join('');
+}
+
+function updateBlendVoices() {
+    const lang = document.getElementById('blend-lang').value;
+    const voices = VOICES[lang] || VOICES['a'];
+    const html = voices.map(v => `<option value="${v.v}">${v.n}</option>`).join('');
+    document.getElementById('blend-voice1').innerHTML = html;
+    document.getElementById('blend-voice2').innerHTML = html;
+    if(voices.length > 1) document.getElementById('blend-voice2').selectedIndex = 1;
+}
+
+async function blendAndTest() {
+    const btn = document.getElementById('blend-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading">⏳</span> ' + (i18n[currentLanguage]['blend.blending'] || '混合并生成中...');
+    resetMetrics();
+    
+    try {
+        updateMetrics('processing');
+        
+        // 1. 先混合声音
+        const blendRes = await fetch(API_BASE + '/v1/audio/voice/blend', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                voice1: document.getElementById('blend-voice1').value,
+                voice2: document.getElementById('blend-voice2').value,
+                weight1: parseFloat(document.getElementById('blend-weight1').value),
+                weight2: parseFloat(document.getElementById('blend-weight2').value),
+                lang_code: document.getElementById('blend-lang').value
+            })
+        });
+        const blendData = await blendRes.json();
+        
+        // 2. 用混合声音生成（流式）
+        const requestData = {
+            model: document.getElementById('tts-model').value,
+            input: document.getElementById('blend-text').value,
+            voice: document.getElementById('blend-voice1').value,
+            lang_code: document.getElementById('blend-lang').value,
+            blended_voice: blendData.blended_voice
+        };
+        
+        await streamPlayer.streamTTS('/v1/audio/speech/stream', requestData);
+        
+    } catch(e) { 
+        updateMetrics('error');
+        console.error(e);
+    }
+    finally { 
+        btn.disabled = false; 
+        btn.innerHTML = '<span>🎨</span> 混合并测试'; 
+    }
+}
+
+function updateSpeed(value) {
+    document.getElementById('speed-val').textContent = value;
+    document.getElementById('speed-display').textContent = value + 'x';
+}
+
+function updateMetric(type, value) {
+    const element = document.getElementById(type + '-value');
+    if (element) {
+        // 如果是字符串直接显示，否则四舍五入
+        element.textContent = typeof value === 'string' ? value : Math.round(value);
+    }
+}
+
+function updateMetrics(status) {
+    const cards = document.querySelectorAll('.metric-card');
+    cards.forEach(card => {
+        card.classList.remove('success');
+        if (status === 'success') {
+            card.classList.add('success');
+        }
+    });
+    
+    const indicator = document.getElementById('status-indicator');
+    indicator.className = `status-indicator ${status}`;
+    const statusText = i18n[currentLanguage]?.[`status.${status}`] || 
+                      (status === 'success' ? '生成完成' : status === 'processing' ? '处理中...' : '错误');
+    indicator.innerHTML = status === 'success' ? '<span>✓</span> ' + statusText : 
+                        status === 'processing' ? '<span class="pulsing">⏳</span> ' + statusText :
+                        '<span>❌</span> 生成失败';
+    indicator.classList.remove('hidden');
+}
+
+function resetMetrics() {
+    ['ttfb','start','total','size'].forEach(type => {
+        document.getElementById(type + '-value').textContent = '--';
+    });
+    document.querySelectorAll('.metric-card').forEach(card => card.classList.remove('success'));
+    document.getElementById('status-indicator').classList.add('hidden');
+}
+
+async function generateTTS() {
+    const btn = document.getElementById('tts-btn');
+    const audio = document.getElementById('tts-audio');
+    const downloadBtn = document.getElementById('download-btn');
+    const progressBar = document.getElementById('progress-bar');
+    const isStreaming = document.getElementById('streaming-toggle').checked;
+    
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading">⏳</span> ' + (i18n[currentLanguage]['tts.generating'] || '生成中...');
+    progressBar.classList.remove('hidden');
+    resetMetrics();
+    
+    const startTime = performance.now();
+    
+    try {
+        const requestData = {
+            model: document.getElementById('tts-model').value,
+            input: document.getElementById('tts-text').value,
+            voice: document.getElementById('tts-voice').value,
+            speed: parseFloat(document.getElementById('tts-speed').value),
+            lang_code: document.getElementById('tts-lang').value
+        };
+
+        if (isStreaming) {
+            // 使用流式端点
+            await streamPlayer.streamTTS('/v1/audio/speech/stream', requestData);
+            downloadBtn.classList.remove('hidden');  // 显示下载按钮
+        } else {
+            updateMetrics('processing');
+            
+            const res = await fetch(API_BASE + '/v1/audio/speech', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(requestData)
+            });
+            
+            const firstByteTime = performance.now();
+            updateMetric('ttfb', firstByteTime - startTime);
+            
+            const blob = await res.blob();
+            updateMetric('size', blob.size / 1024);
+            
+            audio.src = URL.createObjectURL(blob);
+            audio.classList.remove('hidden');
+            downloadBtn.classList.remove('hidden');
+            
+            const playStartTime = performance.now();
+            updateMetric('start', playStartTime - startTime);
+            
+            await audio.play();
+            
+            const totalTime = performance.now() - startTime;
+            updateMetric('total', totalTime);
+            updateMetrics('success');
+        }
+        
+    } catch(e) { 
+        updateMetrics('error');
+        alert('Error: '+e.message); 
+    } finally { 
+        btn.disabled = false; 
+        const btnText = i18n[currentLanguage]['tts.generate'] || '生成语音';
+        btn.innerHTML = '<span>▶</span> ' + btnText;
+        progressBar.classList.add('hidden');
+    }
+}
+
+function downloadAudio() {
+    const audio = document.getElementById('tts-audio');
+    
+    // 如果是流式模式，从StreamPlayer获取WAV
+    if(streamPlayer && streamPlayer.allPcmData && streamPlayer.allPcmData.length > 0) {
+        // 合并PCM数据
+        const totalLength = streamPlayer.allPcmData.reduce((sum, arr) => sum + arr.length, 0);
+        const pcmData = new Uint8Array(totalLength);
+        let offset = 0;
+        for (const chunk of streamPlayer.allPcmData) {
+            pcmData.set(chunk, offset);
+            offset += chunk.length;
+        }
+        
+        // 转换为WAV
+        const wavBlob = pcmToWav(pcmData, 24000);
+        const url = URL.createObjectURL(wavBlob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'mlx-audio-' + Date.now() + '.wav';
+        a.click();
+        URL.revokeObjectURL(url);
+    } else if (audio.src) {
+        // 标准模式
+        const a = document.createElement('a');
+        a.href = audio.src;
+        a.download = 'mlx-audio-' + Date.now() + '.wav';
+        a.click();
+    } else {
+        alert('No audio to download');
+    }
+}
+
+function pcmToWav(pcmData, sampleRate) {
+    const numChannels = 1;
+    const bitsPerSample = 16;
+    const byteRate = sampleRate * numChannels * bitsPerSample / 8;
+    const blockAlign = numChannels * bitsPerSample / 8;
+    const dataSize = pcmData.length;
+    const buffer = new ArrayBuffer(44 + dataSize);
+    const view = new DataView(buffer);
+    
+    const writeString = (offset, str) => {
+        for (let i = 0; i < str.length; i++) 
+            view.setUint8(offset + i, str.charCodeAt(i));
+    };
+    
+    writeString(0, 'RIFF');
+    view.setUint32(4, 36 + dataSize, true);
+    writeString(8, 'WAVE');
+    writeString(12, 'fmt ');
+    view.setUint32(16, 16, true);
+    view.setUint16(20, 1, true);
+    view.setUint16(22, numChannels, true);
+    view.setUint32(24, sampleRate, true);
+    view.setUint32(28, byteRate, true);
+    view.setUint16(32, blockAlign, true);
+    view.setUint16(34, bitsPerSample, true);
+    writeString(36, 'data');
+    view.setUint32(40, dataSize, true);
+    
+    new Uint8Array(buffer, 44).set(pcmData);
+    return new Blob([buffer], { type: 'audio/wav' });
+}
+
+function handleFileSelect(input) {
+    if(input.files[0]) {
+        document.getElementById('file-name').textContent = '📄 ' + input.files[0].name;
+        document.getElementById('file-name').classList.remove('hidden');
+    }
+}
+
+function updatePromptCount() {
+    const prompt = document.getElementById('stt-prompt').value;
+    const count = prompt.length;
+    const countEl = document.getElementById('prompt-count');
+    countEl.textContent = `(${count}/900)`;
+    countEl.style.color = count > 900 ? '#ef4444' : 'var(--dim)';
+}
+
+async function transcribe() {
+    const btn = document.getElementById('stt-btn');
+    const file = document.getElementById('stt-file').files[0];
+    console.log('Transcribe called, file:', file);
+    if(!file) {
+        console.error('No file selected');
+        alert('请先选择音频文件');
+        return;
+    }
+    
+    console.log('Starting transcription...');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="loading">⏳</span> ' + (i18n[currentLanguage]['stt.transcribing'] || '转录中...');
+    resetMetrics();
+    updateMetrics('processing');
+    
+    const progressDiv = document.getElementById('stt-progress');
+    const progressBar = document.getElementById('stt-progress-bar');
+    const progressText = document.getElementById('stt-progress-text');
+    progressDiv.classList.remove('hidden');
+    
+    const startTime = performance.now();
+    let audioDuration = 0;
+    let progressInterval = null;
+    
+    try {
+        // 获取音频时长
+        const audioEl = new Audio(URL.createObjectURL(file));
+        await new Promise(resolve => {
+            audioEl.onloadedmetadata = () => {
+                audioDuration = audioEl.duration;
+                console.log('Audio duration:', audioDuration);
+                updateMetric('start', audioDuration);
+                resolve();
+            };
+        });
+        
+        const form = new FormData();
+        form.append('file', file);
+        form.append('model', document.getElementById('stt-model').value);
+        
+        const lang = document.getElementById('stt-lang').value;
+        const prompt = document.getElementById('stt-prompt').value;
+        const format = document.getElementById('stt-format').value;
+        
+        if(lang) form.append('language', lang);
+        if(prompt) form.append('prompt', prompt);
+        if(format) form.append('format', format);
+        
+        // 检查是否需要异步处理（>5分钟）
+        if (audioDuration > 300) {
+            console.log('Long audio detected, using async API');
+            await transcribeAsync(form, startTime, progressDiv, progressBar, progressText, file);
+        } else {
+            console.log('Short audio, using sync API');
+            await transcribeSync(form, startTime, progressDiv, progressBar, progressText, file, audioDuration);
+        }
+        
+    } catch(e) { 
+        console.error('Transcribe error:', e);
+        if(progressInterval) clearInterval(progressInterval);
+        progressDiv.classList.add('hidden');
+        updateMetrics('error');
+        alert('转录失败: ' + e.message); 
+    } finally { 
+        btn.disabled = false; 
+        btn.innerHTML = '<span>▶</span> ' + (i18n[currentLanguage]['stt.transcribe'] || '开始转录'); 
+    }
+}
+
+async function transcribeSync(form, startTime, progressDiv, progressBar, progressText, file, audioDuration) {
+    let progressInterval = setInterval(() => {
+        const elapsed = (performance.now() - startTime) / 1000;
+        const estimatedTotal = audioDuration * 0.05 + 2;
+        const progress = Math.min(95, (elapsed / estimatedTotal) * 100);
+        progressBar.style.width = progress + '%';
+        progressText.textContent = Math.floor(progress) + '%';
+    }, 100);
+    
+    const uploadStart = performance.now();
+    console.log('Sending sync request to:', API_BASE + '/v1/audio/transcriptions');
+    
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 7200000);
+    
+    const res = await fetch(API_BASE + '/v1/audio/transcriptions', {
+        method:'POST', 
+        body:form,
+        signal: controller.signal
+    });
+    clearTimeout(timeout);
+    const processEnd = performance.now();
+    
+    clearInterval(progressInterval);
+    progressBar.style.width = '100%';
+    progressText.textContent = '100%';
+    
+    const totalProcessTime = processEnd - uploadStart;
+    updateMetric('ttfb', totalProcessTime);
+    
+    const data = await res.json();
+    displayResult(data, file);
+    
+    setTimeout(() => progressDiv.classList.add('hidden'), 1000);
+    
+    const totalTime = processEnd - uploadStart;
+    if(audioDuration > 0) {
+        const rtf = (totalTime / 1000) / audioDuration;
+        const speedMultiplier = (1 / rtf).toFixed(1);
+        updateMetric('total', speedMultiplier + 'x');
+    } else {
+        updateMetric('total', (totalTime / 1000).toFixed(1) + 's');
+    }
+    updateMetric('size', file.size / 1024);
+    updateMetrics('success');
+}
+
+async function transcribeAsync(form, startTime, progressDiv, progressBar, progressText, file) {
+    // 1. 提交异步任务
+    console.log('Submitting async task to:', API_BASE + '/v1/audio/transcriptions/async');
+    const submitRes = await fetch(API_BASE + '/v1/audio/transcriptions/async', {
+        method: 'POST',
+        body: form
+    });
+    
+    if (!submitRes.ok) {
+        throw new Error(`提交失败: ${submitRes.status}`);
+    }
+    
+    const submitData = await submitRes.json();
+    const taskId = submitData.task_id;
+    console.log('Task submitted, ID:', taskId);
+    
+    // 2. 轮询状态
+    progressText.textContent = '已提交，等待处理...';
+    let pollCount = 0;
+    
+    const pollInterval = setInterval(async () => {
+        try {
+            pollCount++;
+            console.log(`Polling attempt ${pollCount} for task ${taskId}`);
+            
+            const statusRes = await fetch(API_BASE + `/v1/audio/transcriptions/async/${taskId}`);
+            if (!statusRes.ok) {
+                throw new Error(`状态查询失败: ${statusRes.status}`);
+            }
+            
+            const statusData = await statusRes.json();
+            console.log('Task status:', statusData);
+            
+            // 更新进度显示
+            const elapsed = (performance.now() - startTime) / 1000;
+            const progress = Math.min(90, (elapsed / 60) * 100); // 假设最多1分钟完成
+            progressBar.style.width = progress + '%';
+            progressText.textContent = `${statusData.status} (${Math.floor(progress)}%)`;
+            
+            if (statusData.status === 'completed') {
+                clearInterval(pollInterval);
+                
+                // 3. 显示结果
+                progressBar.style.width = '100%';
+                progressText.textContent = '100% - 完成';
+                
+                displayResult(statusData.result, file);
+                
+                setTimeout(() => progressDiv.classList.add('hidden'), 1000);
+                
+                const totalTime = performance.now() - startTime;
+                updateMetric('ttfb', totalTime);
+                updateMetric('total', (totalTime / 1000).toFixed(1) + 's');
+                updateMetric('size', file.size / 1024);
+                updateMetrics('success');
+                
+            } else if (statusData.status === 'failed') {
+                clearInterval(pollInterval);
+                throw new Error(statusData.error || '处理失败');
+            }
+            // 其他状态（pending, processing）继续轮询
+            
+        } catch (pollError) {
+            clearInterval(pollInterval);
+            throw pollError;
+        }
+    }, 2000); // 每2秒轮询一次
+}
+
+function displayResult(data, file) {
+    const result = document.getElementById('stt-result');
+    const format = document.getElementById('stt-format').value;
+    
+    if(format === 'json') {
+        result.textContent = JSON.stringify(data, null, 2);
+    } else {
+        result.textContent = data.text || data;
+    }
+    result.classList.remove('hidden');
+    
+    // 播放上传的音频并显示可视化
+    const sttAudio = document.getElementById('stt-audio');
+    if(sttAudio) {
+        sttAudio.src = URL.createObjectURL(file);
+        sttAudio.classList.remove('hidden');
+        startAudioVisualization(sttAudio);
+    }
+}
+
+// 拖拽上传
+const zone = document.getElementById('upload-zone');
+zone.ondragover = e => { e.preventDefault(); zone.classList.add('dragover'); };
+zone.ondragleave = () => zone.classList.remove('dragover');
+zone.ondrop = e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    if(e.dataTransfer.files[0]) {
+        document.getElementById('stt-file').files = e.dataTransfer.files;
+        handleFileSelect(document.getElementById('stt-file'));
+    }
+};
+
+let sttAudioContext = null;
+let sttAnalyser = null;
+
+function startAudioVisualization(audioElement) {
+    const canvas = document.getElementById('stt-waveform');
+    if(!canvas) return;
+    canvas.classList.remove('hidden');
+    
+    // 重用或创建AudioContext
+    if(!sttAudioContext) {
+        sttAudioContext = new (window.AudioContext || window.webkitAudioContext)();
+        sttAnalyser = sttAudioContext.createAnalyser();
+        sttAnalyser.fftSize = 2048;
+        
+        try {
+            const source = sttAudioContext.createMediaElementSource(audioElement);
+            source.connect(sttAnalyser);
+            sttAnalyser.connect(sttAudioContext.destination);
+        } catch(e) {
+            console.log('Audio source already connected, reusing...');
+        }
+    }
+    
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const bufferLength = sttAnalyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    
+    function draw() {
+        if(audioElement.paused) return;
+        requestAnimationFrame(draw);
+        
+        sttAnalyser.getByteFrequencyData(dataArray);
+        
+        const bgGradient = ctx.createLinearGradient(0, 0, 0, height);
+        bgGradient.addColorStop(0, '#1a1a24');
+        bgGradient.addColorStop(1, '#0a0a0f');
+        ctx.fillStyle = bgGradient;
+        ctx.fillRect(0, 0, width, height);
+        
+        const barWidth = (width / bufferLength) * 2.5;
+        let x = 0;
+        
+        for(let i = 0; i < bufferLength; i++) {
+            const barHeight = (dataArray[i] / 255) * height * 0.8;
+            
+            const barGradient = ctx.createLinearGradient(0, height - barHeight, 0, height);
+            barGradient.addColorStop(0, '#ec4899');
+            barGradient.addColorStop(0.5, '#8b5cf6');
+            barGradient.addColorStop(1, '#3b82f6');
+            
+            ctx.fillStyle = barGradient;
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#ec4899';
+            ctx.fillRect(x, height - barHeight, barWidth, barHeight);
+            
+            x += barWidth + 1;
+        }
+        ctx.shadowBlur = 0;
+    }
+    
+    audioElement.onplay = () => draw();
+}
+
+async function testAPI() {
+    const url = document.getElementById('api-url').value;
+    const resultEl = document.getElementById('api-test-result');
+    const testing = i18n[currentLanguage]['api.testing'] || '测试中...';
+    const success = i18n[currentLanguage]['api.success'] || '连接成功';
+    const failed = i18n[currentLanguage]['api.failed'] || '连接失败';
+    const models = i18n[currentLanguage]['api.models'] || '模型';
+    const memory = i18n[currentLanguage]['api.memory'] || '内存';
+    
+    resultEl.textContent = testing;
+    try {
+        const res = await fetch(url + '/api/health');
+        const data = await res.json();
+        resultEl.style.color = 'var(--green)';
+        resultEl.textContent = `✅ ${success}！${models}: ${data.models.tts.length + data.models.stt.length}个, ${memory}: ${data.models.total_memory_mb.toFixed(0)}MB`;
+        window.API_BASE = url;
+    } catch(e) {
+        resultEl.style.color = 'var(--red)';
+        resultEl.textContent = `❌ ${failed}: ${e.message}`;
+    }
+}
+
+function toggleModelManager() {
+    document.getElementById('model-manager').classList.toggle('hidden');
+}
+
+async function refreshModels() {
+    try {
+        const res = await fetch(API_BASE + '/api/health');
+        if(!res.ok) throw new Error('API not ready');
+        const data = await res.json();
+        
+        // 紧凑显示
+        const ttsCompact = document.getElementById('tts-models-compact');
+        const sttCompact = document.getElementById('stt-models-compact');
+        const memoryCompact = document.getElementById('memory-compact');
+        
+        if(!ttsCompact || !sttCompact) return;
+        
+        const notLoaded = i18n[currentLanguage]['model.notLoaded'] || '未加载';
+        const unloadBtn = i18n[currentLanguage]['model.unload'] || '卸载';
+        
+        if(data.models.tts.length > 0) {
+            ttsCompact.innerHTML = data.models.tts.map(m => m.split('/')[1].split('-')[0]).join(', ');
+        } else {
+            ttsCompact.textContent = notLoaded;
+        }
+        
+        if(data.models.stt.length > 0) {
+            sttCompact.innerHTML = data.models.stt.map(m => m.split('/')[1].replace('whisper-', '')).join(', ');
+        } else {
+            sttCompact.textContent = notLoaded;
+        }
+        
+        // 详细列表
+        const ttsDiv = document.getElementById('tts-models-list');
+        const sttDiv = document.getElementById('stt-models-list');
+        
+        // 估算每个模型内存（简化）
+        const ttsMemory = data.models.tts.length > 0 ? (data.models.total_memory_mb * 0.3).toFixed(0) : 0;
+        const sttMemory = data.models.stt.length > 0 ? (data.models.total_memory_mb * 0.7).toFixed(0) : 0;
+        
+        if(data.models.tts.length > 0) {
+            ttsDiv.innerHTML = data.models.tts.map(m => {
+                const name = m.split('/')[1];
+                return `<div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem;background:var(--surface2);border-radius:6px;margin-bottom:.5rem;font-size:.8rem">
+                    <span>✅ ${name}</span>
+                    <div style="display:flex;gap:.5rem;align-items:center">
+                        <span style="color:var(--accent)">${ttsMemory}MB</span>
+                        <button onclick="unloadModel('${m}')" style="padding:.2rem .5rem;background:var(--red);border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:.7rem">${unloadBtn}</button>
+                    </div>
+                </div>`;
+            }).join('');
+        } else {
+            ttsDiv.innerHTML = `<div style="color:var(--dim);font-size:.8rem">${notLoaded}</div>`;
+        }
+        
+        if(data.models.stt.length > 0) {
+            sttDiv.innerHTML = data.models.stt.map(m => {
+                const name = m.split('/')[1];
+                return `<div style="display:flex;justify-content:space-between;align-items:center;padding:.5rem;background:var(--surface2);border-radius:6px;margin-bottom:.5rem;font-size:.8rem">
+                    <span>✅ ${name}</span>
+                    <div style="display:flex;gap:.5rem;align-items:center">
+                        <span style="color:var(--accent)">${sttMemory}MB</span>
+                        <button onclick="unloadModel('${m}')" style="padding:.2rem .5rem;background:var(--red);border:none;border-radius:4px;color:#fff;cursor:pointer;font-size:.7rem">${unloadBtn}</button>
+                    </div>
+                </div>`;
+            }).join('');
+        } else {
+            sttDiv.innerHTML = `<div style="color:var(--dim);font-size:.8rem">${notLoaded}</div>`;
+        }
+        
+        // 更新总内存（只更新紧凑显示）
+        const totalMem = (data.models.total_memory_mb || 0).toFixed(0) + ' MB';
+        const compactMem = document.getElementById('memory-compact');
+        if(compactMem) compactMem.textContent = totalMem;
+    } catch(e) {
+        console.error('refreshModels error:', e);
+    }
+}
+
+async function unloadModel(modelName) {
+    if(!confirm(`确定卸载 ${modelName}？`)) return;
+    try {
+        await fetch(`/v1/models/${encodeURIComponent(modelName)}`, {method: 'DELETE'});
+        refreshModels();
+    } catch(e) {
+        alert('卸载失败: ' + e.message);
+    }
+}
+
+// 初始化
+document.addEventListener('DOMContentLoaded', () => {
+    console.log('DOM loaded, initializing...');
+    initializeLanguage();
+    updateVoices();
+    updatePromptCount();
+    setTimeout(() => refreshModels(), 500);
+    setInterval(refreshModels, 5000);
+    console.log('Initialization complete');
+    console.log('Voices loaded:', document.getElementById('tts-voice')?.options.length || 0);
+});
+</script>
+</body>
+</html>

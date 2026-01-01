@@ -1,0 +1,30 @@
+{
+  "productName": "MLX-Audio",
+  "version": "0.6.0",
+  "identifier": "com.mlxaudio.app",
+  "build": {
+    "frontendDist": "../src"
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["dmg", "app"],
+    "resources": [
+      "resources/"
+    ],
+    "macOS": {
+      "minimumSystemVersion": "11.0"
+    }
+  },
+  "app": {
+    "windows": [{
+      "title": "MLX-Audio All-in-One",
+      "width": 1200,
+      "height": 900,
+      "resizable": true,
+      "fullscreen": false
+    }],
+    "security": {
+      "csp": null
+    }
+  }
+}
