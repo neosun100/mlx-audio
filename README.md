@@ -24,7 +24,7 @@ Text-to-Speech (TTS) and Speech-to-Text (STT) library based on Apple's MLX frame
 
 ## ✨ Features
 
-![MLX-Audio Screenshot](docs/screenshot.png)
+![MLX-Audio Screenshot](docs/snapshot-v1.png)
 
 ### 🌊 Real-time Streaming
 - **Stream-as-you-generate** - First audio <500ms
