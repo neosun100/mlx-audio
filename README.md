@@ -188,19 +188,43 @@ curl -X POST http://localhost:8002/v1/audio/transcriptions \
 
 ## 📝 Changelog
 
-### v0.3.2 (Latest)
+### v1.0.0 (Latest) - 2026-01-02
+- 🎉 **Major Release**: Production-ready version
+- 📱 **Mac App**: All-in-One desktop application (592MB DMG)
+- 🌍 **12 Languages UI**: Complete internationalization
+- 🎨 **Dynamic Spectrum**: Real-time audio visualization
+- 🎤 **6 Whisper Models**: Tiny to Large with 4-bit quantization
+- 📝 **Professional Prompt**: 150+ technical terms for better accuracy
+- 🔄 **Async STT**: Support for long audio files
+- 💾 **Audio Download**: Download generated audio
+- 🚀 **Model Management**: Load/unload models dynamically
+
+### v0.7.4 - Tauri Desktop App
+- 📱 Tauri-based Mac application
+- 🎯 All-in-One package with Python + Kokoro model
+- ✅ No external dependencies
+- 🌐 Complete i18n support
+
+### v0.5.0 - Web UI Enhancement
+- 🌍 12 language UI support
+- 🎨 Modern gradient theme
+- 📊 Real-time performance metrics
+- 🔧 Model preloading optimization
+
+### v0.4.0 - Advanced Features
+- 🎨 Voice blending functionality
+- 📊 Dynamic waveform visualization
+- 🎤 Multiple Whisper model selection
+- 📝 Subtitle generation (SRT/VTT)
+
+### v0.3.2
 - ✨ Real-time streaming output with <500ms latency
 - 🚀 Model preloading and performance optimization
 - 📊 Performance monitoring and metrics
 - 🌊 Smart sentence splitting for faster first byte
 
-### v0.3.1
-- 🎤 Added Whisper-Turbo STT support
-- 🔧 Improved model loading efficiency
-- 🐛 Fixed memory management issues
-
 ### v0.3.0
-- 🎯 Initial release with Kokoro-82M and VoxCPM1.5
+- 🎯 Initial release with Kokoro-82M
 - 🌐 Web UI and API endpoints
 - 📱 Multi-language support
 
